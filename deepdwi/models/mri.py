@@ -18,10 +18,22 @@ from deepdwi.models.dims import *
 
 class Sense(nn.Module):
     """
-    Generalized sensitivity encoding forward modeling
+    Generalized sensitivity encoding (SENSE) forward modeling.
+    This class constructs the SENSE forward operator as an nn.Module.
 
     Args:
+        coils: coil sensitivity maps
+        y: sampled k-space data
+        basis: basis matrix
+        phase_echo: phase maps of echoes
+        phase_slice: multi-band slices phases
+        coord: non-Cartesian trajectories
+        weights: k-space weights
 
+    References:
+    * Pruessmann KP, Weiger M, Börnert P, Boesiger P.
+      Advances in sensitivity encoding with arbitrary k-space trajectories.
+      Magn Reson Med 2001;46:638-651. doi: 10.1002/mrm.1241.
     """
     def __init__(self,
                  coils: torch.Tensor,
@@ -73,7 +85,6 @@ class Sense(nn.Module):
             weights = (util.rss(y, dim=(DIM_COIL, ), keepdim=True) > 0).type(y.dtype)
 
         self.weights = weights
-
 
     def forward(self, x):
 
@@ -129,13 +140,6 @@ class Sense(nn.Module):
         self._check_two_shape(y.shape, self.y.shape)
 
         return y
-
-    def loss_function(self, y, x, lamda):
-
-        return torch.sum(abs(y - self.forward(x))**2 \
-            # + lamda * abs(x)**1)
-            + lamda * abs(torch.roll(x, (1, 1), dims=(-2, -1)) - x))
-
 
     def _check_two_shape(self, ref_shape, dst_shape):
         for i1, i2 in zip(ref_shape, dst_shape):

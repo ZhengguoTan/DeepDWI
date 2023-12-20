@@ -5,7 +5,7 @@ import torch.testing as ptt
 
 from deepdwi import fourier
 from deepdwi.models import mri
-from deepdwi.models.dims import *
+from deepdwi.dims import *
 
 if __name__ == "__main__":
     unittest.main()

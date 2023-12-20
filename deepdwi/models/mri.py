@@ -13,7 +13,7 @@ from typing import List, Union
 
 
 from deepdwi import fourier, util
-from deepdwi.models.dims import *
+from deepdwi.dims import *
 
 
 class Sense(nn.Module):

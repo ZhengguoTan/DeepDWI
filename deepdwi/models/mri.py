@@ -108,7 +108,7 @@ class Sense(nn.Module):
                 px = x1[:, n]
                 x2[:, n] = self.basis.decode(px)
 
-            x_proj = x2.view()
+            x_proj = x2.view([self.y.shape[0]] + img_shape)
 
         else:
             x_proj = x

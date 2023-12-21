@@ -141,6 +141,51 @@ class Sense(nn.Module):
 
         return y
 
+    def adjoint(self, input):
+
+        self._check_two_shape(input.shape, self.y.shape)
+
+        # k-space sampling mask
+        output = torch.conj(self.weights) * input
+
+        # SMS
+        if self.phase_slice is not None:
+            N_slice = self.phase_slice.shape[DIM_Z]
+
+            tile_dims = []
+            for d in range(-output.dim(), 0):
+                tile_dims.append(1 if d != DIM_Z else N_slice)
+
+            output = torch.conj(self.phase_slice) * torch.tile(output, dims=tuple(tile_dims))
+
+        # FFT
+        if self.coord is None:
+            output = fourier.ifft(output, dim=(-2, -1))
+        else:
+            None # TODO: NUFFT
+
+        # coil sensitivity maps
+        output = torch.sum(torch.conj(self.coils) * output,
+                           dim=DIM_COIL, keepdim=True)
+
+        # phase modeling
+        if self.phase_echo is not None:
+            output = torch.sum(torch.conj(self.phase_echo) * output,
+                               dim=DIM_ECHO, keepdim=True)
+
+        # subspace modeling
+        if jit.isinstance(self.basis, torch.Tensor):
+            N_ful, N_sub = self.basis.shape
+            basis_t = self.basis.conj().swapaxes(-1, -2)
+            x1 = basis_t @ output.view(output.shape[0], -1)
+
+            output = x1.view([N_sub] + list(output.shape[1:]))
+
+        elif jit.isinstance(self.basis, nn.Module):
+            raise RuntimeError('This model is nonlinear.')
+
+        return output
+
     def _check_two_shape(self, ref_shape, dst_shape):
         for i1, i2 in zip(ref_shape, dst_shape):
             if (i1 != i2):

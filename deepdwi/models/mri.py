@@ -42,7 +42,8 @@ class Sense(nn.Module):
                  phase_echo: torch.Tensor = None,
                  phase_slice: torch.Tensor = None,
                  coord: torch.Tensor = None,
-                 weights: torch.Tensor = None):
+                 weights: torch.Tensor = None,
+                 device=None):
         super(Sense, self).__init__()
 
         # k-space data shape in accordance with dims.py
@@ -53,38 +54,75 @@ class Sense(nn.Module):
 
         if phase_slice is not None:
             MB = phase_slice.shape[DIM_Z]
+            self.phase_slice = phase_slice.to(device)
         else:
             MB = 1
+            self.phase_slice = None
 
         # start to construct image shape
         img_shape = [1] + [MB] + [N_y] + [N_x]
 
         # basis
-        self.basis = basis
         if basis is not None:
             assert(N_time == basis.shape[0])
             x_time = basis.shape[1]
-
+            self.basis = basis.to(device)
         else:
             x_time = N_time
+            self.basis = None
 
         # echo
         ishape = [x_time] + [N_echo] + img_shape
+        if phase_echo is not None:
+            self.phase_echo = phase_echo.to(device)
+        else:
+            self.phase_echo = None
 
         self.xshape = ishape
 
         # others
-        self.y = y
         self.coils = coils
+        self.y = y
 
-        self.phase_echo = phase_echo
-        self.phase_slice = phase_slice
-        self.coord = coord
+        if coord is not None:
+            self.coord = coord.to(device)
+        else:
+            self.coord = None
 
         if weights is None and coord is None:
             weights = (util.rss(y, dim=(DIM_COIL, ), keepdim=True) > 0).type(y.dtype)
 
-        self.weights = weights
+        self.weights = weights.to(device) if weights is not None else None
+
+        self.device = device
+
+        L = nn.Linear(2, 3)
+
+    def to(self, device):
+        r"""
+        custom implementation of the `to` function in nn.Module
+        """
+        self.device = device
+
+        self.coils.to(self.device)
+        self.y.to(self.device)
+
+        if self.basis is not None:
+            self.basis = self.basis.to(self.device)
+
+        if self.phase_echo is not None:
+            self.phase_echo = self.phase_echo.to(self.device)
+
+        if self.phase_slice is not None:
+            self.phase_slice = self.phase_slice.to(self.device)
+
+        if self.coord is not None:
+            self.coord = self.coord.to(self.device)
+
+        if self.weights is not None:
+            self.weights = self.weights.to(self.device)
+
+        return super(Sense, self).to(device)
 
     def forward(self, x):
 

@@ -78,7 +78,8 @@ class Sense(nn.Module):
         else:
             self.phase_echo = None
 
-        self.xshape = ishape
+        self.ishape = ishape
+        self.oshape = y.shape
 
         # others
         self.coils = coils
@@ -95,8 +96,6 @@ class Sense(nn.Module):
         self.weights = weights.to(device) if weights is not None else None
 
         self.device = device
-
-        L = nn.Linear(2, 3)
 
     def to(self, device):
         r"""

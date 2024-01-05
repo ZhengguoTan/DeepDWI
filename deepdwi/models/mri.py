@@ -43,7 +43,7 @@ class Sense(nn.Module):
                  phase_slice: torch.Tensor = None,
                  coord: torch.Tensor = None,
                  weights: torch.Tensor = None,
-                 device=None):
+                 device = torch.device('cpu')):
         super(Sense, self).__init__()
 
         # k-space data shape in accordance with dims.py

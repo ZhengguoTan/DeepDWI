@@ -119,6 +119,9 @@ class ConjugateGradient(nn.Module):
                 return self.x
 
             self.alpha = self.rzold / pAp
+            if torch.isnan(self.alpha).any() or torch.isinf(self.alpha).any():
+                self.alpha = torch.zeros_like(self.alpha)
+
             util.axpy(self.x, self.alpha, self.p)
             if self.iter < self.max_iter - 1:
                 util.axpy(self.r, -self.alpha, Ap)

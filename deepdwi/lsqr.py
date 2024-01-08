@@ -12,6 +12,7 @@ References:
 """
 
 import torch
+import torch.jit as jit
 import torch.nn as nn
 
 from typing import Optional
@@ -51,16 +52,24 @@ class ConjugateGradient(nn.Module):
         """
         super(ConjugateGradient, self).__init__()
 
-        self.A = A
-        self.b = b
-        self.x = x
-        self.P = P
+        if jit.isinstance(A, torch.Tensor) or jit.isinstance(A, nn.Module):
+            self.A = A.to(device)
+        else:
+            self.A = A
+
+        self.b = b.to(device)
+        self.x = x.to(device)
+
+        if jit.isinstance(P, torch.Tensor) or jit.isinstance(P, nn.Module):
+            self.P = P.to(device)
+        else:
+            self.P = P
 
         self.damp = damp
         if x0 is None:
-            self.x0 = torch.zeros_like(x)
+            self.x0 = torch.zeros_like(x).to(device)
         else:
-            self.x0 = x0
+            self.x0 = x0.to(device)
 
         self.iter = 0
         self.max_iter = max_iter
@@ -86,6 +95,19 @@ class ConjugateGradient(nn.Module):
         self.resid = self.rzold.item()**0.5
 
     def to(self, device):
+        r"""
+        custom implementation of the `to` function in nn.Module
+        """
+        self.device = device
+        if jit.isinstance(self.A, torch.Tensor) or jit.isinstance(self.A, nn.Module):
+            self.A = self.A.to(device)
+
+        if jit.isinstance(self.P, torch.Tensor) or jit.isinstance(self.P, nn.Module):
+            self.P = self.P.to(device)
+
+        self.r = self.r.to(device)
+        self.p = self.p.to(device)
+
         return super(ConjugateGradient, self).to(device)
 
     def forward(self):

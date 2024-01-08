@@ -36,7 +36,7 @@ class TestLsqr(unittest.TestCase):
             x = torch.zeros_like(x_torch, device=device)
 
             A_func = lambda x: A.T @ A @ x + lamda * x
-            CG = lsqr.ConjugateGradient(A_func, A.T @ y, x, device=device)
+            CG = lsqr.ConjugateGradient(A_func, A.T @ y, x)
 
             x = CG()
 

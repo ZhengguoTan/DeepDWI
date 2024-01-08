@@ -37,7 +37,6 @@ class ConjugateGradient(nn.Module):
         x0 (Tensor): initial guess of x. Defaut is None.
         max_iter (int): Maximum number of iterations. Default is 100.
         tol (float): Tolerance for stopping condition. Default is 0.
-        device: Default is torch.device('cpu').
         verbose (bool): display debug messages. Default is False.
 
     """
@@ -45,36 +44,36 @@ class ConjugateGradient(nn.Module):
     def __init__(self, A, b: torch.Tensor, x: torch.Tensor,
                  P=None, damp: float = 0, x0: Optional[torch.Tensor] = None,
                  max_iter: int = 100, tol: float = 0,
-                 device = torch.device('cpu'),
                  verbose: bool = False):
         r"""
         initilizes the conjugate gradient method
         """
         super(ConjugateGradient, self).__init__()
 
+        self.device = b.device
+        self.b = b
+
         if jit.isinstance(A, torch.Tensor) or jit.isinstance(A, nn.Module):
-            self.A = A.to(device)
+            self.A = A.to(self.device)
         else:
             self.A = A
 
-        self.b = b.to(device)
-        self.x = x.to(device)
+        self.x = x.to(self.device)
 
         if jit.isinstance(P, torch.Tensor) or jit.isinstance(P, nn.Module):
-            self.P = P.to(device)
+            self.P = P.to(self.device)
         else:
             self.P = P
 
         self.damp = damp
         if x0 is None:
-            self.x0 = torch.zeros_like(x).to(device)
+            self.x0 = torch.zeros_like(x).to(self.device)
         else:
-            self.x0 = x0.to(device)
+            self.x0 = x0.to(self.device)
 
         self.iter = 0
         self.max_iter = max_iter
         self.tol = tol
-        self.device = device
         self.verbose = verbose
 
 

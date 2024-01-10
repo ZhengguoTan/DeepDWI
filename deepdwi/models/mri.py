@@ -22,13 +22,14 @@ class Sense(nn.Module):
     This class constructs the SENSE forward operator as an nn.Module.
 
     Args:
-        coils: coil sensitivity maps
-        y: sampled k-space data
-        basis: basis matrix
-        phase_echo: phase maps of echoes
-        phase_slice: multi-band slices phases
-        coord: non-Cartesian trajectories
-        weights: k-space weights
+        coils (Tensor): coil sensitivity maps.
+        y (Tensor): sampled k-space data.
+        basis (Tensor or nn.Module): basis matrix. Default is None.
+        phase_echo (Tensor): phase maps of echoes or shots. Default is None.
+        combine_echo (bool): reconstruct only one echo or combine shots. Default is None.
+        phase_slice (Tensor): multi-band slices phases. Default is None.
+        coord (Tensor): non-Cartesian trajectories. Default is None.
+        weights (Tensor): k-space weights or sampling masks. Default is None.
 
     References:
     * Pruessmann KP, Weiger M, Börnert P, Boesiger P.
@@ -40,11 +41,19 @@ class Sense(nn.Module):
                  y: torch.Tensor,
                  basis: Union[torch.Tensor, nn.Module] = None,
                  phase_echo: torch.Tensor = None,
+                 combine_echo: bool = False,
                  phase_slice: torch.Tensor = None,
                  coord: torch.Tensor = None,
-                 weights: torch.Tensor = None,
-                 device = torch.device('cpu')):
+                 weights: torch.Tensor = None):
+        r"""
+        Initialize Sense as a nn.Module.
+        """
         super(Sense, self).__init__()
+
+        self.device = y.device
+
+        self.y = y
+        self.coils = coils.to(self.device)
 
         # k-space data shape in accordance with dims.py
         N_time, N_echo, N_coil, N_z, N_y, N_x = y.shape
@@ -54,7 +63,7 @@ class Sense(nn.Module):
 
         if phase_slice is not None:
             MB = phase_slice.shape[DIM_Z]
-            self.phase_slice = phase_slice.to(device)
+            self.phase_slice = phase_slice.to(self.device)
         else:
             MB = 1
             self.phase_slice = None
@@ -66,36 +75,42 @@ class Sense(nn.Module):
         if basis is not None:
             assert(N_time == basis.shape[0])
             x_time = basis.shape[1]
-            self.basis = basis.to(device)
+            self.basis = basis.to(self.device)
+
+            ishape = [x_time] + [1] + img_shape
+
         else:
             x_time = N_time
             self.basis = None
 
-        # echo
-        ishape = [x_time] + [N_echo] + img_shape
+            if combine_echo is True:
+
+                assert(phase_echo is not None)
+                ishape = [x_time] + [1] + img_shape
+
+            else:
+
+                ishape = [x_time] + [N_echo] + img_shape
+
+        # echo or shot
         if phase_echo is not None:
-            self.phase_echo = phase_echo.to(device)
+            self.phase_echo = phase_echo.to(self.device)
         else:
             self.phase_echo = None
 
         self.ishape = ishape
         self.oshape = y.shape
 
-        # others
-        self.coils = coils
-        self.y = y
-
         if coord is not None:
-            self.coord = coord.to(device)
+            self.coord = coord.to(self.device)
         else:
             self.coord = None
 
+        # samling mask
         if weights is None and coord is None:
             weights = (util.rss(y, dim=(DIM_COIL, ), keepdim=True) > 0).type(y.dtype)
 
-        self.weights = weights.to(device) if weights is not None else None
-
-        self.device = device
+        self.weights = weights.to(self.device) if weights is not None else None
 
     def to(self, device):
         r"""

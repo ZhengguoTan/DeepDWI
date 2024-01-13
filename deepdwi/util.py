@@ -5,12 +5,12 @@ Author:
     Zhengguo Tan <zhengguo.tan@gmail.com>
 """
 
-
 import torch
 
 from torch import Tensor
 
 from typing import Tuple, Union
+
 
 def rss(x: Tensor,
         dim: Tuple[int] = (0, ),
@@ -41,3 +41,15 @@ def xpay(y: Tensor, a, x: Tensor):
     """
     y *= a
     y += x
+
+
+def estimate_weights(y, coil_dim: int = 0):
+    """Compute a binary mask from zero-filled k-space.
+
+    Args:
+        y (Tensor): zero-filled k-space.
+        coil_dim (int): The coils dimension index. Default is 0.
+    """
+
+    weights = (rss(y, dim=(coil_dim, ), keepdims=True) > 0).astype(y.dtype)
+    return weights

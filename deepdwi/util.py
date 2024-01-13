@@ -51,5 +51,5 @@ def estimate_weights(y, coil_dim: int = 0):
         coil_dim (int): The coils dimension index. Default is 0.
     """
 
-    weights = (rss(y, dim=(coil_dim, ), keepdim=True) > 0).astype(y.dtype)
+    weights = (rss(y, dim=(coil_dim, ), keepdim=True) > 0).type(y.dtype)
     return weights

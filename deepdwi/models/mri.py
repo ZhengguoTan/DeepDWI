@@ -9,13 +9,13 @@ import torch
 import torch.jit as jit
 import torch.nn as nn
 
-from typing import List, Union
+from typing import Callable, Union
 
-
-from deepdwi import fourier, util
+from deepdwi import fourier, lsqr, util
 from deepdwi.dims import *
 
 
+# %%
 class Sense(nn.Module):
     """
     Generalized sensitivity encoding (SENSE) forward modeling.
@@ -24,12 +24,16 @@ class Sense(nn.Module):
     Args:
         coils (Tensor): coil sensitivity maps.
         y (Tensor): sampled k-space data.
-        basis (Tensor or nn.Module): basis matrix. Default is None.
+        basis (Tensor or nn.Module or Callable function): basis projection. Default is None.
+        N_basis (int): Number of basis. Only used when basis is Callable or nn.Module. Default is 7.
         phase_echo (Tensor): phase maps of echoes or shots. Default is None.
         combine_echo (bool): reconstruct only one echo or combine shots. Default is None.
         phase_slice (Tensor): multi-band slices phases. Default is None.
         coord (Tensor): non-Cartesian trajectories. Default is None.
         weights (Tensor): k-space weights or sampling masks. Default is None.
+
+    Return:
+        A Sense nn.Module.
 
     References:
     * Pruessmann KP, Weiger M, Börnert P, Boesiger P.
@@ -39,7 +43,8 @@ class Sense(nn.Module):
     def __init__(self,
                  coils: torch.Tensor,
                  y: torch.Tensor,
-                 basis: Union[torch.Tensor, nn.Module] = None,
+                 basis: Union[torch.Tensor, nn.Module, Callable] = None,
+                 N_basis: int = 7,
                  phase_echo: torch.Tensor = None,
                  combine_echo: bool = False,
                  phase_slice: torch.Tensor = None,
@@ -73,11 +78,18 @@ class Sense(nn.Module):
 
         # basis
         if basis is not None:
-            assert(N_time == basis.shape[0])
-            x_time = basis.shape[1]
-            self.basis = basis.to(self.device)
+            if jit.isinstance(basis, torch.Tensor):
+                assert(N_time == basis.shape[0])
+                x_time = basis.shape[1]
+            else:
+                x_time = N_basis
 
-            ishape = [x_time] + [1] + img_shape
+            if jit.isinstance(basis, torch.Tensor) or jit.isinstance(basis, nn.Module):
+                self.basis = basis.to(self.device)
+            else:
+                self.basis = basis
+
+            ishape = [x_time] + [1] + img_shape  # TODO:
 
         else:
             x_time = N_time
@@ -121,7 +133,7 @@ class Sense(nn.Module):
         self.coils.to(self.device)
         self.y.to(self.device)
 
-        if self.basis is not None:
+        if jit.isinstance(self.basis, torch.Tensor) or jit.isinstance(self.basis, nn.Module):
             self.basis = self.basis.to(self.device)
 
         if self.phase_echo is not None:
@@ -153,14 +165,13 @@ class Sense(nn.Module):
 
         elif jit.isinstance(self.basis, nn.Module):
             # deep nonlinear subspace
-            x1 = x.view(x.shape[0], -1)
-            x2 = torch.zeros(self.y.shape[0], dtype=x1.dtype)
-            x2 = x2.view(x2.shape[0], -1)
-            for n in range(x1.shape[1]):
-                px = x1[:, n]
-                x2[:, n] = self.basis.decode(px)
+            x1 = x.view(x.shape[0], -1).T
+            x2 = self.basis.decode(x1)
 
-            x_proj = x2.view([self.y.shape[0]] + img_shape)
+            x_proj = x2.T.view([self.y.shape[0]] + img_shape)
+
+        elif jit.isinstance(self.basis, Callable):
+            x_proj = self.basis(x)
 
         else:
             x_proj = x

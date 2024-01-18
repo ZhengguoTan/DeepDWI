@@ -9,7 +9,7 @@ import torch
 
 from torch import Tensor
 
-from typing import Tuple, Union
+from typing import Tuple
 
 
 def rss(x: Tensor,

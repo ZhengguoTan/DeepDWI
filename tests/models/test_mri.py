@@ -138,3 +138,38 @@ class TestMri(unittest.TestCase):
         x_adj = SENSE.adjoint(y_fwd)
 
         ptt.assert_close(x_adj, x_sp_ten)
+
+    def test_data_consistency(self):
+        for device in devices:
+            img_shape = [1, 1, 1, 3, 16, 16]
+            mps_shape = [1, 1, 8, 3, 16, 16]
+
+            mps7 = []
+            ksp7 = []
+            phs7 = []
+            img7 = []
+            for _ in range(3):  # REPETITION
+                img = torch.randn(img_shape, dtype=torch.cfloat, device=device)
+                phs = torch.randn(img_shape, dtype=torch.cfloat, device=device)
+                mps = torch.randn(mps_shape, dtype=torch.cfloat, device=device)
+
+                ksp = torch.sum(phs * fourier.fft(mps * img, dim=(-2, -1)),
+                                dim=DIM_Z, keepdim=True)
+
+                mps7.append(mps)
+                ksp7.append(ksp)
+                phs7.append(phs)
+                img7.append(img)
+
+            mps7 = torch.stack(mps7)
+            ksp7 = torch.stack(ksp7)
+            phs7 = torch.stack(phs7)
+            img7 = torch.stack(img7)
+
+            DC = mri.DataConsistency(mps7, ksp7, phase_slice=phs7, lamda=1E-6)
+
+            print(len(DC.SENSE_ModuleList))
+
+            x = DC()
+
+            ptt.assert_close(x, img7)

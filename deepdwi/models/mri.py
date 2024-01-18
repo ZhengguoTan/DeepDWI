@@ -254,3 +254,63 @@ class Sense(nn.Module):
             if (i1 != i2):
                 raise ValueError('shape mismatch for ref {ref}, got {dst}'.format(
                     ref=ref_shape, dst=dst_shape))
+
+
+# %%
+class DataConsistency(nn.Module):
+    def __init__(self, sens: torch.Tensor,
+                 kspace: torch.Tensor,
+                 basis: Union[torch.Tensor, nn.Module] = None,
+                 phase_echo: torch.Tensor = None,
+                 phase_slice: torch.Tensor = None,
+                 lamda: float = 1E-2,
+                 max_iter: int = 100,
+                 tol: float = 0):
+
+        super(DataConsistency, self).__init__()
+
+        assert kspace.dim() == 7
+
+        self.kspace = kspace
+        self.sens = sens
+
+        SENSE_ModuleList = nn.ModuleList()  # empty ModuleList
+
+        batch_size = kspace.shape[DIM_REP]
+        for b in range(batch_size):
+
+            sens_r = sens[b]
+            kspace_r = kspace[b]
+            basis_r = basis[b] if basis is not None else None
+            phase_echo_r = phase_echo[b] if phase_echo is not None else None
+            phase_slice_r = phase_slice[b] if phase_slice is not None else None
+
+            SENSE = Sense(sens_r, kspace_r, basis=basis_r,
+                          phase_echo=phase_echo_r,
+                          phase_slice=phase_slice_r)
+
+            SENSE_ModuleList.append(SENSE)
+
+        self.SENSE_ModuleList = SENSE_ModuleList
+        self.lamda = lamda
+        self.max_iter = max_iter
+        self.tol = tol
+
+    def forward(self):
+
+        x = []
+        for A in self.SENSE_ModuleList:
+
+            AHA = lambda x: A.adjoint(A.forward(x)) + self.lamda * x
+            AHy = A.adjoint(A.y)
+
+            x_init = torch.zeros_like(AHy)
+            CG = lsqr.ConjugateGradient(AHA, AHy, x_init,
+                                        max_iter=self.max_iter,
+                                        tol=self.tol)
+
+            x.append(CG())
+
+        # convert a list of tensors to one tensor
+        x = torch.stack(x)
+        return x

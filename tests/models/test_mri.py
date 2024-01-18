@@ -4,9 +4,11 @@ import numpy as np
 import sigpy as sp
 
 import torch
+import torch.nn as nn
+import torch.optim as optim
 import torch.testing as ptt
 
-from deepdwi import fourier
+from deepdwi import fourier, lsqr
 from deepdwi.models import mri
 from deepdwi.dims import *
 
@@ -17,6 +19,49 @@ if __name__ == "__main__":
 devices = [torch.device('cpu'), torch.device('cuda')]
 
 class TestMri(unittest.TestCase):
+    def solve_mri_lsqr(self, Model: nn.Module,
+                       y: torch.Tensor,
+                       lamda: float = 1E-5,
+                       max_iter: int = 100):
+
+        AHA = lambda x : Model.adjoint(Model.forward(x)) + lamda * x
+        AHy = Model.adjoint(y)
+        x_init = torch.zeros_like(AHy)
+        CG = lsqr.ConjugateGradient(AHA, AHy, x_init, max_iter=max_iter)
+        x = CG()
+        return x
+
+    # TODO: use this function in test
+    def solve_mri_torch(self, Model: nn.Module,
+                   y: torch.Tensor,
+                   x_gt: torch.Tensor,
+                   epochs: int = 400,
+                   lr: float = 0.01,
+                   weight_decay: float = 0.,
+                   verbose: bool = False):
+        x = torch.zeros_like(x_gt, requires_grad=True)
+        lossf = nn.MSELoss(reduction='sum')
+        # lossf = lambda x: torch.sum((y - Model(x))**2) + 1E-5 * torch.sum(x**2)
+        optimizer = optim.Adam([x], lr=lr, eps=1E-5,
+                               weight_decay=weight_decay)
+
+        rhs = Model.adjoint(Model.y)
+
+        for epoch in range(epochs):
+            lhs = Model.adjoint(Model(x)) + 1E-5 * x
+            res = lossf(torch.view_as_real(lhs), torch.view_as_real(rhs))
+
+            # res = lossf(x)
+
+            optimizer.zero_grad()
+            res.backward()
+            optimizer.step()
+
+            if verbose:
+                print('> epoch %3d loss %.12f'%(epoch, res.item()))
+
+        return x
+
     def test_sense_model(self):
         for device in devices:
             img_shape = [1, 1, 1, 1, 16, 16]
@@ -32,7 +77,15 @@ class TestMri(unittest.TestCase):
 
             ptt.assert_close(y1, y2)
 
-    def test_sense_model_basis(self):
+            # solve with CG
+            x_lsqr = self.solve_mri_lsqr(S, y2)
+            ptt.assert_close(x_lsqr, img, atol=1E-5, rtol=1E-5)
+
+            # TODO: solve with Torch
+            # x = self.solve_mri_torch(S, y2, img, lr=0.1, epochs=400)
+            # ptt.assert_close(x, img, atol=1E-5, rtol=1E-5)
+
+    def test_sense_model_basis_tensor(self):
         for device in devices:
             subim_shape = [5, 1, 1, 1, 16, 16]
             basis_shape = [35, 5]
@@ -51,6 +104,13 @@ class TestMri(unittest.TestCase):
 
             assert y.device == y_fwd.device
             ptt.assert_close(y, y_fwd)
+
+            # solve with CG
+            x_lsqr = self.solve_mri_lsqr(S, y_fwd, max_iter=100)
+            ptt.assert_close(x_lsqr, subim, atol=1E-5, rtol=1E-5)
+
+    def test_sense_model_basis_function(self):
+        None # TODO: when basis is Callable
 
     def test_sense_model_phase_echo(self):
         for device in devices:

@@ -15,7 +15,9 @@ if __name__ == "__main__":
     unittest.main()
 
 
-devices = [torch.device('cpu'), torch.device('cuda')]
+devices = [torch.device('cpu')]
+if torch.cuda.is_available():
+    devices.append(torch.device('cuda'))
 
 class TestZSSSL(unittest.TestCase):
 

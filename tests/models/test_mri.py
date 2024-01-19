@@ -16,7 +16,9 @@ if __name__ == "__main__":
     unittest.main()
 
 
-devices = [torch.device('cpu'), torch.device('cuda')]
+devices = [torch.device('cpu')]
+if torch.cuda.is_available():
+    devices.append(torch.device('cuda'))
 
 class TestMri(unittest.TestCase):
     def solve_mri_lsqr(self, Model: nn.Module,

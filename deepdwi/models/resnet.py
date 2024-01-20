@@ -51,18 +51,18 @@ class ResidualBlockModule(nn.Module):
 
 # %%
 class ResNet2D(nn.Module):
-    def __init__(self, in_channels=2, N_ResidualBlocks=5):
+    def __init__(self, in_channels=2, N_residual_block=5):
 
         super().__init__()
         self.in_channels = in_channels
-        self.N_ResidualBlocks = N_ResidualBlocks
+        self.N_residual_block = N_residual_block
         kernel_size = 3
         features = 64
         filter1 = [kernel_size, in_channels, features] #map input to size of feature maps
         filter2 = [kernel_size, features, features] #ResNet Blocks
         filter3 = [kernel_size, features, in_channels] #map output channels to input channels
         self.layer1 = conv_layer(filter_size=filter1, activation_type='None')
-        self.layer2 = ResidualBlockModule(filter_size=filter2, num_blocks=N_ResidualBlocks)
+        self.layer2 = ResidualBlockModule(filter_size=filter2, num_blocks=N_residual_block)
         self.layer3 =  conv_layer(filter_size=filter2, activation_type='None')
         self.layer4 = conv_layer(filter_size=filter3, activation_type='None')
 

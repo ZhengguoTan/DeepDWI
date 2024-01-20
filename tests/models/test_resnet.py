@@ -21,7 +21,7 @@ class TestResnet(unittest.TestCase):
 
     def test_ResNet2D(self):
         for device in devices:
-            img_shape = [1, 1, 1, 1, 1, 16, 24]
+            img_shape = [1, 1, 1, 1, 3, 16, 24]
             img = torch.randn(img_shape, dtype=torch.cfloat, device=device)
 
             N_y, N_x = img_shape[-2:]

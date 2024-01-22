@@ -212,11 +212,19 @@ class UnrollNet(nn.Module):
     def __init__(self,
                  lamda: float = 0.01,
                  requires_grad_lamda: bool = True,
-                 N_unroll: int = 10):
+                 N_unroll: int = 10,
+                 NN: str = 'Identity'):
         super(UnrollNet, self).__init__()
 
         # neural network part
-        self.NN = resnet.ResNet3D(in_channels=2, N_residual_block=5)
+        if NN == 'ResNet3D':
+            self.NN = resnet.ResNet3D(in_channels=2, N_residual_block=5)
+            print('> Use ResNet3D')
+        elif NN == 'ResNet2D':
+            self.NN = resnet.ResNet2D(in_channels=2, N_residual_block=5)
+            print('> Use ResNet2D')
+        elif NN == 'Identity':
+            self.NN = nn.Identity()
 
         self.lamda = nn.Parameter(torch.tensor([lamda]), requires_grad=requires_grad_lamda)
         self.N_unroll = N_unroll
@@ -231,13 +239,22 @@ class UnrollNet(nn.Module):
         Return:
             * okspace (torch.Tensor): output k-space
         """
+        input = x
+
+        print('>>> Model input shape: ', input.shape)
+
+        T = Trafos(tuple(list(input.shape) + [2]))
+
+
         for n in range(self.N_unroll):
-            rhs = x + self.lamda * x
-            x = _solve_SENSE_ModuleList(Train_SENSE_ModuleList, rhs, self.lamda)
+            input = T.adjoint(self.NN(T(input)))
 
-        lossf_kspace = _fwd_SENSE_ModuleList(Lossf_SENSE_ModuleList, x)
+            rhs = input + self.lamda * input
+            input = _solve_SENSE_ModuleList(Train_SENSE_ModuleList, rhs, self.lamda)
 
-        return x, self.lamda, lossf_kspace
+        lossf_kspace = _fwd_SENSE_ModuleList(Lossf_SENSE_ModuleList, input)
+
+        return input, self.lamda, lossf_kspace
 
 # %%
 class MixL1L2Loss(nn.Module):

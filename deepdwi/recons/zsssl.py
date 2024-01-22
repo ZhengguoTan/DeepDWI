@@ -251,7 +251,8 @@ class MixL1L2Loss(nn.Module):
         loss = self.scalar*(torch.norm(yhat-y) / torch.norm(y)) +\
                 self.scalar*(torch.norm(yhat-y, p=1) / torch.norm(y, p=1))
 
-        return loss
+        return torch.autograd.Variable(loss, requires_grad=True)
+        # return loss
 
 # %%
 def train(Model, DataLoader, lossf, optim,

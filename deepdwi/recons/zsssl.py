@@ -273,10 +273,20 @@ class MixL1L2Loss(nn.Module):
 
 # %%
 def train(Model, DataLoader, lossf, optim,
-          device=torch.device('cpu')):
+          device=torch.device('cpu'),
+          dtype=torch.complex64):
     train_lossv = 0
+    # Model = torch.nn.DataParallel(Model)
+    Model = Model.to(device)
     Model.train()
     for ii, (sens, kspace, train_mask, lossf_mask, phase_shot, phase_slice) in enumerate(DataLoader):
+
+        sens = sens.to(device).type(dtype)
+        kspace = kspace.to(device).type(dtype)
+        train_mask = train_mask.to(device).type(dtype)
+        lossf_mask = lossf_mask.to(device).type(dtype)
+        phase_shot = phase_shot.to(device).type(dtype)
+        phase_slice = phase_slice.to(device).type(dtype)
 
         train_kspace = train_mask * kspace
         Train_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
@@ -293,7 +303,7 @@ def train(Model, DataLoader, lossf, optim,
                                                          phase_slice)
 
         # apply Model
-        ynet = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
+        x, lamda, ynet = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
 
         # loss
         lossv = lossf(ynet, lossf_kspace)
@@ -309,32 +319,39 @@ def train(Model, DataLoader, lossf, optim,
 
 # %%
 def valid(Model, DataLoader, lossf, optim,
-          phase_echo: torch.Tensor = None,
-          phase_slice: torch.Tensor = None,
-          device=torch.device('cpu')):
+          device=torch.device('cpu'),
+          dtype=torch.complex64):
     valid_lossv = 0
-    Model.valid()
+    # Model = torch.nn.DataParallel(Model)
+    Model = Model.to(device)
+    Model.eval()
     with torch.no_grad():
-        for ii, (sens, kspace, train_mask, lossf_mask) in enumerate(DataLoader):
+        for ii, (sens, kspace, train_mask, lossf_mask, phase_shot, phase_slice) in enumerate(DataLoader):
 
             # to device
+            sens = sens.to(device).type(dtype)
+            kspace = kspace.to(device).type(dtype)
+            train_mask = train_mask.to(device).type(dtype)
+            lossf_mask = lossf_mask.to(device).type(dtype)
+            phase_shot = phase_shot.to(device).type(dtype)
+            phase_slice = phase_slice.to(device).type(dtype)
 
             train_kspace = train_mask * kspace
-            Train_SENSE_ModuleList = _build_SENSE_ModuleList(sens.to(device),
-                                                            train_kspace.to(device),
-                                                            phase_echo.to(device),
-                                                            phase_slice.to(device))
+            Train_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
+                                                            train_kspace,
+                                                            phase_shot,
+                                                            phase_slice)
 
             x = _adj_SENSE_ModuleList(Train_SENSE_ModuleList)
 
             lossf_kspace = lossf_mask * kspace
-            Lossf_SENSE_ModuleList = _build_SENSE_ModuleList(sens.to(device),
-                                                            lossf_kspace.to(device),
-                                                            phase_echo.to(device),
-                                                            phase_slice.to(device))
+            Lossf_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
+                                                            lossf_kspace,
+                                                            phase_shot,
+                                                            phase_slice)
 
             # apply Model
-            ynet = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
+            x, lamda, ynet = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
 
             # loss
             lossv = lossf(ynet, lossf_kspace)

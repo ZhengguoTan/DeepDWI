@@ -124,3 +124,13 @@ class TestZSSSL(unittest.TestCase):
                 x, lamda, _ = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
 
                 ptt.assert_close(x, img.to(device))
+
+    def test_trafos(self):
+        for device in devices:
+            img_shape = [10, 5, 1, 1, 3, 16, 24]
+
+            img = torch.randn(img_shape, dtype=torch.cfloat, device=device)
+            T = zsssl.Trafos(tuple(img_shape + [2]))
+            output = T.adjoint(T(img))
+
+            ptt.assert_close(output, img)

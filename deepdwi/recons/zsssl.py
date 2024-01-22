@@ -5,7 +5,7 @@ This module implements Zero-Shot Self-Supervised Learning
 import torch
 import torch.nn as nn
 
-from deepdwi import lsqr
+from deepdwi import lsqr, util
 from deepdwi.models import mri, resnet
 
 from typing import Callable, List, Optional, Tuple, Union
@@ -166,6 +166,40 @@ class Dataset(torch.utils.data.Dataset):
 
     def _check_tensor_dim(self, actual_dim: int, expect_dim: int):
         assert actual_dim == expect_dim
+
+
+# %%
+class Trafos(nn.Module):
+    def __init__(self, ishape: Tuple[int, ...]):
+        super(Trafos, self).__init__()
+
+        print('>>> Trafos ishape: ', ishape)
+
+        N_rep, N_diff, N_shot, N_coil, N_z, N_y, N_x, N_channel = ishape
+
+        self.P1 = util.Permute(ishape, (0, 4, 1, 2, 3, 5, 6, 7))
+        self.R1 = util.Reshape(tuple([N_rep * N_z] + [N_diff * N_shot * N_coil] + [N_y, N_x, N_channel]), self.P1.oshape)
+        self.P2 = util.Permute(self.R1.oshape, (0, 4, 1, 2, 3))
+
+    def forward(self, x: torch.Tensor):
+        y = torch.view_as_real(x)
+        N_rep, N_diff, N_shot, N_coil, N_z, N_y, N_x, N_channel = y.shape
+
+        output = self.P2(self.R1(self.P1(y)))
+        output = output.squeeze(2)
+
+        return output
+
+    def adjoint(self, x: torch.Tensor):
+        if x.dim() == 4:
+            output = x.unsqueeze(2)
+        elif x.dim() == 5:
+            output = x.clone()
+
+        output = self.P1.adjoint(self.R1.adjoint(self.P2.adjoint(output)))
+        output = torch.view_as_complex(output)
+
+        return output
 
 # %%
 class UnrollNet(nn.Module):

@@ -69,10 +69,12 @@ def _build_SENSE_ModuleList(sens: torch.Tensor,
 
 def _fwd_SENSE_ModuleList(SENSE_ModuleList: nn.ModuleList,
                           x: torch.Tensor) -> torch.Tensor:
+    input = x.clone()
+
     y = []
     for l in range(len(SENSE_ModuleList)):
         A = SENSE_ModuleList[l]
-        y.append(A(x[l]))
+        y.append(A(input[l]))
 
     return torch.stack(y)
 

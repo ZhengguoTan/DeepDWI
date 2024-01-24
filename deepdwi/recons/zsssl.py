@@ -170,8 +170,6 @@ class Trafos(nn.Module):
     def __init__(self, ishape: Tuple[int, ...]):
         super(Trafos, self).__init__()
 
-        print('>>> Trafos ishape: ', ishape)
-
         N_rep, N_diff, N_shot, N_coil, N_z, N_y, N_x, N_channel = ishape
 
         self.P1 = util.Permute(ishape, (0, 4, 1, 2, 3, 5, 6, 7))
@@ -189,7 +187,7 @@ class Trafos(nn.Module):
 
     def adjoint(self, x: torch.Tensor):
         if x.dim() == 4:
-            output = x.unsqueeze(2)
+            output = x.clone().unsqueeze(2)
         elif x.dim() == 5:
             output = x.clone()
 

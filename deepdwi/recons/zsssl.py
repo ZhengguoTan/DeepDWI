@@ -356,5 +356,37 @@ def valid(Model, DataLoader, lossf, optim,
     return valid_lossv
 
 # %%
-def test():
-    None
+def test(Model, DataLoader,
+          device=torch.device('cpu'),
+          dtype=torch.complex64):
+    Model = Model.to(device)
+    Model.eval()
+    with torch.no_grad():
+        for ii, (sens, kspace, train_mask, lossf_mask, phase_shot, phase_slice) in enumerate(DataLoader):
+
+            # to device
+            sens = sens.to(device).type(dtype)
+            kspace = kspace.to(device).type(dtype)
+            train_mask = train_mask.to(device).type(dtype)
+            lossf_mask = lossf_mask.to(device).type(dtype)
+            phase_shot = phase_shot.to(device).type(dtype)
+            phase_slice = phase_slice.to(device).type(dtype)
+
+            train_kspace = train_mask * kspace
+            Train_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
+                                                            train_kspace,
+                                                            phase_shot,
+                                                            phase_slice)
+
+            x = _adj_SENSE_ModuleList(Train_SENSE_ModuleList)
+
+            lossf_kspace = lossf_mask * kspace
+            Lossf_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
+                                                            lossf_kspace,
+                                                            phase_shot,
+                                                            phase_slice)
+
+            # apply Model
+            x, lamda, ynet = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
+
+    return x

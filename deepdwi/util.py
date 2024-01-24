@@ -30,6 +30,8 @@ def axpy(y: Tensor, a, x: Tensor):
         a (scalar or Tensor): Input scalar.
         x (Tensor): Input array.
 
+    Note:
+        These are inplace operations!!!
     """
     y += a * x
 
@@ -41,6 +43,9 @@ def xpay(y: Tensor, a, x: Tensor):
         y (Tensor): Output array.
         a (scalar or Tensor): Input scalar.
         x (Tensor): Input array.
+
+    Note:
+        These are inplace operations!!!
     """
     y *= a
     y += x

@@ -310,7 +310,7 @@ def train(Model, DataLoader, lossf, optim,
 
         train_lossv += lossv.item()/ len(DataLoader)
 
-    return train_lossv
+    return train_lossv, lamda
 
 # %%
 def valid(Model, DataLoader, lossf, optim,

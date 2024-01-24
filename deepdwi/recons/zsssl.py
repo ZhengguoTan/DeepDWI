@@ -206,15 +206,18 @@ class UnrollNet(nn.Module):
                  lamda: float = 0.01,
                  requires_grad_lamda: bool = True,
                  N_unroll: int = 10,
-                 NN: str = 'Identity'):
+                 NN: str = 'Identity',
+                 features: int = 64):
         super(UnrollNet, self).__init__()
 
         # neural network part
         if NN == 'ResNet3D':
-            self.NN = resnet.ResNet3D(in_channels=2, N_residual_block=5)
+            self.NN = resnet.ResNet3D(in_channels=2, N_residual_block=5,
+                                      features=features)
             print('> Use ResNet3D')
         elif NN == 'ResNet2D':
-            self.NN = resnet.ResNet2D(in_channels=2, N_residual_block=5)
+            self.NN = resnet.ResNet2D(in_channels=2, N_residual_block=5,
+                                      features=features)
             print('> Use ResNet2D')
         elif NN == 'Identity':
             self.NN = nn.Identity()

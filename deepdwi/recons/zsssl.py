@@ -87,31 +87,26 @@ def _adj_SENSE_ModuleList(SENSE_ModuleList: nn.ModuleList) -> torch.Tensor:
     return torch.stack(AHy)
 
 def _solve_SENSE_ModuleList(SENSE_ModuleList: nn.ModuleList,
-                            xinit: torch.Tensor = None,
+                            x0: torch.Tensor = None,
                             lamda: float = 0.01,
-                            max_iter: int = 100,
+                            max_iter: int = 10,
                             tol: float = 0.) -> torch.Tensor:
-    x = []
+    res = []
     for l in range(len(SENSE_ModuleList)):
         A = SENSE_ModuleList[l]
 
         # normal equation with Tikhonov regu
         AHA = lambda x: A.adjoint(A.forward(x)) + lamda * x
         # adjoint
-        AHy = A.adjoint(A.y)
+        AHy = A.adjoint(A.y) + lamda * x0[l]
 
-        if xinit is None:
-            x0 = torch.zeros_like(AHy)
-        else:
-            x0 = xinit[l]
-
-        CG = lsqr.ConjugateGradient(AHA, AHy, x0,
+        CG = lsqr.ConjugateGradient(AHA, AHy, torch.zeros_like(AHy),
                                     max_iter=max_iter,
                                     tol=tol)
 
-        x.append(CG())  # run CG
+        res.append(CG())  # run CG
 
-    return torch.stack(x)
+    return torch.stack(res)
 
 
 # %%

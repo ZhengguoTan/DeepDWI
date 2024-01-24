@@ -297,6 +297,9 @@ def train(Model, DataLoader, lossf, optim,
         # apply Model
         x, lamda, ynet = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
 
+        del Train_SENSE_ModuleList
+        del Lossf_SENSE_ModuleList
+
         # loss
         lossv = lossf(ynet, lossf_kspace)
 

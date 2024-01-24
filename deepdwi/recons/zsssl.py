@@ -235,9 +235,7 @@ class UnrollNet(nn.Module):
         Return:
             * okspace (torch.Tensor): output k-space
         """
-        input = x
-
-        print('>>> Model input shape: ', input.shape)
+        input = x.clone()
 
         T = Trafos(tuple(list(input.shape) + [2]))
 
@@ -245,8 +243,7 @@ class UnrollNet(nn.Module):
         for n in range(self.N_unroll):
             input = T.adjoint(self.NN(T(input)))
 
-            rhs = input + self.lamda * input
-            input = _solve_SENSE_ModuleList(Train_SENSE_ModuleList, rhs, self.lamda)
+            input = _solve_SENSE_ModuleList(Train_SENSE_ModuleList, input, self.lamda)
 
         lossf_kspace = _fwd_SENSE_ModuleList(Lossf_SENSE_ModuleList, input)
 

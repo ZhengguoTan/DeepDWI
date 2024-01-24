@@ -121,9 +121,9 @@ class ConjugateGradient(nn.Module):
             if torch.isnan(self.alpha).any() or torch.isinf(self.alpha).any():
                 self.alpha = torch.zeros_like(self.alpha)
 
-            util.axpy(self.x, self.alpha, self.p)
+            self.x = self.x + self.alpha * self.p
             if self.iter < self.max_iter - 1:
-                util.axpy(self.r, -self.alpha, Ap)
+                self.r = self.r - self.alpha * Ap
                 if self.P is not None:
                     z = self.P(self.r)
                 else:
@@ -131,7 +131,7 @@ class ConjugateGradient(nn.Module):
 
                 rznew = torch.real(torch.vdot(self.r.flatten(), z.flatten()))
                 beta = rznew / self.rzold
-                util.xpay(self.p, beta, z)
+                self.p = beta * self.p + z
                 self.rzold = rznew
 
             self.resid = self.rzold.item()**0.5

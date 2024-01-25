@@ -1,5 +1,7 @@
 import unittest
 
+import numpy as np
+
 import torch
 import torch.testing as ptt
 
@@ -54,3 +56,16 @@ class TestFourier(unittest.TestCase):
             fourier.ifft(input),
             torch.fft.fftshift(torch.fft.ifftn(torch.fft.ifftshift(input), norm="ortho"))
         )
+
+    def test_fft2(self):
+        input = torch.randn([4, 16, 16], dtype=torch.cfloat)
+
+        y2 = []
+        for n in range(input.shape[0]):
+            x = input[n]
+            y2.append((1 / np.sqrt(x.numel())) * torch.fft.fftshift(torch.fft.fft2(torch.fft.ifftshift(x, dim=(-2, -1))), dim=(-2, -1)))
+
+        y2 = torch.stack(y2)
+
+        yn = fourier.fft(input, dim=(-2, -1))
+        ptt.assert_close(y2, yn, atol=1e-5, rtol=1e-5)

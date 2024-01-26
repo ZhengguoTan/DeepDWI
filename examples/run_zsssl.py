@@ -184,8 +184,11 @@ if __name__ == "__main__":
     parser.add_argument('--repeats', type=int, default=12,
                         help='number of repeats per epoch')
 
-    parser.add_argument('--diff_idx', type=int, default=2,
-                        help='reconstruct only on diffuion encoding')
+    parser.add_argument('--diff_idx', type=int, default=-1,
+                        help='reconstruct only one diffuion encoding')
+
+    parser.add_argument('--lr', type=float, default=5E-3,
+                        help='learning rate')
 
     args = parser.parse_args()
 

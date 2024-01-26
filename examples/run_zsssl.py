@@ -228,7 +228,7 @@ if __name__ == "__main__":
     if kdat7.shape[DIM_TIME] == 1:
         model = zsssl.UnrollNet(NN='ResNet2D', requires_grad_lamda=True, N_unroll=8, features=4)
     else:
-        model = zsssl.UnrollNet(NN='ResNet3D', requires_grad_lamda=False)
+        model = zsssl.UnrollNet(NN='ResNet3D', requires_grad_lamda=True, N_unroll=8, features=4)
 
 
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())

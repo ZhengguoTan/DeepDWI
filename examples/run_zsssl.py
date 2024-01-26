@@ -27,7 +27,8 @@ torch.manual_seed(0)
 # %%
 def prep_data(data_file: str,
               coil_file: str,
-              slice_idx: int = 0):
+              slice_idx: int = 0,
+              norm_kdat: bool = False):
 
     f = h5py.File(DAT_DIR + '/' + data_file, 'r')
     kdat = f['kdat'][:]
@@ -49,6 +50,9 @@ def prep_data(data_file: str,
 
     kdat_prep = np.array(kdat_prep)
     kdat_prep = kdat_prep[..., None, :, :]  # 6 dim
+
+    if norm_kdat:
+        kdat_prep = kdat_prep / np.max(np.abs(kdat_prep[:]))
 
     N_diff, N_shot, N_coil, _, N_y, N_x = kdat_prep.shape
 
@@ -170,6 +174,9 @@ if __name__ == "__main__":
                         default='1.2mm_32-dir_R3x2_kdat_slice_000.h5',
                         help='raw dat file.')
 
+    parser.add_argument('--norm_kdat', action='store_true',
+                        help='normalize kspace data')
+
     parser.add_argument('--coil',
                         default='1.2mm_32-dir_R3x2_coil.h5',
                         help='coil sensitivity maps file.')
@@ -184,7 +191,7 @@ if __name__ == "__main__":
 
 
     # %%
-    coil4, kdat6, phase_shot, phase_slice, mask = prep_data(args.data, args.coil, slice_idx=0)
+    coil4, kdat6, phase_shot, phase_slice, mask = prep_data(args.data, args.coil, slice_idx=0, norm_kdat=args.norm_kdat)
 
     mask, train_mask, lossf_mask, valid_mask = prep_mask(mask, N_repeats=args.repeats)
 

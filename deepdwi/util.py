@@ -118,7 +118,7 @@ class Permute(nn.Module):
         super().__init__()
 
     def forward(self, input: torch.Tensor):
-        return torch.permute(input, self.dims)
+        return input.permute(self.dims).contiguous()
 
     def adjoint(self, input: torch.Tensor):
 
@@ -129,6 +129,10 @@ class Permute(nn.Module):
             iaxes = np.argsort(self.dims)
             oshape = [self.ishape[a] for a in self.dims]
 
+        return input.permute(tuple(iaxes)).contiguous()
+
+    def normal(self, input: torch.Tensor):
+        return input
 
 
 class C2R(nn.Module):

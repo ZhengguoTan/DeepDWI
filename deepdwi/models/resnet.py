@@ -147,7 +147,7 @@ class ResNet3D(nn.Module):
                                        activation_type='None')
 
         # 4th convolutional layer
-        self.conv_layer4 = _conv_layer(features, features, kernel_size,
+        self.conv_layer4 = _conv_layer(features, in_channels, kernel_size,
                                        stride, padding,
                                        activation_type='None')
 

@@ -170,29 +170,35 @@ class Trafos(nn.Module):
     def __init__(self, ishape: Tuple[int, ...]):
         super(Trafos, self).__init__()
 
-        N_rep, N_diff, N_shot, N_coil, N_z, N_y, N_x, N_channel = ishape
+        N_rep, N_diff, N_shot, N_coil, N_z, N_y, N_x = ishape
 
-        self.P1 = util.Permute(ishape, (0, 4, 1, 2, 3, 5, 6, 7))
-        self.R1 = util.Reshape(tuple([N_rep * N_z] + [N_diff * N_shot * N_coil] + [N_y, N_x, N_channel]), self.P1.oshape)
-        self.P2 = util.Permute(self.R1.oshape, (0, 4, 1, 2, 3))
+
+        self.R1 = util.Reshape(tuple([N_rep] + [N_diff * N_shot * N_coil] + [N_z, N_y, N_x]), ishape)
+        self.P1 = util.Permute(self.R1.oshape, (0, 2, 1, 3, 4))
+
+        D, H, W = self.P1.oshape[-3:]
+
+        self.R2 = util.Reshape((N_rep * N_z, D, H, W), self.P1.oshape)
+
+        self.C2R = util.C2R()
+
+        self.P2 = util.Permute(tuple(list(self.R2.oshape) + [2]), (0, 4, 1, 2, 3))
 
     def forward(self, x: torch.Tensor):
-        y = torch.view_as_real(x)
-        N_rep, N_diff, N_shot, N_coil, N_z, N_y, N_x, N_channel = y.shape
-
-        output = self.P2(self.R1(self.P1(y)))
-        output = output.squeeze(2)
+        output = self.P2(self.C2R(self.R2(self.P1(self.R1(x)))))
+        
+        if output.shape[-3] == 1:
+            output = output.squeeze(2)
 
         return output
 
     def adjoint(self, x: torch.Tensor):
         if x.dim() == 4:
-            output = x.clone().unsqueeze(2)
+            input = x.clone().unsqueeze(2)
         elif x.dim() == 5:
-            output = x.clone()
+            input = x.clone()
 
-        output = self.P1.adjoint(self.R1.adjoint(self.P2.adjoint(output)))
-        output = torch.view_as_complex(output)
+        output = self.R1.adjoint(self.P1.adjoint(self.R2.adjoint(self.C2R.adjoint(self.P2.adjoint(input)))))
 
         return output
 
@@ -237,7 +243,7 @@ class UnrollNet(nn.Module):
         """
         input = x.clone()
 
-        T = Trafos(tuple(list(input.shape) + [2]))
+        T = Trafos(input.shape)
 
 
         for n in range(self.N_unroll):

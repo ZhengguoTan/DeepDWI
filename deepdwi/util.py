@@ -121,15 +121,7 @@ class Permute(nn.Module):
         return input.permute(self.dims).contiguous()
 
     def adjoint(self, input: torch.Tensor):
-
-        if self.dims is None:
-            iaxes = None
-            oshape = self.ishape[::-1]
-        else:
-            iaxes = np.argsort(self.dims)
-            oshape = [self.ishape[a] for a in self.dims]
-
-        return input.permute(tuple(iaxes)).contiguous()
+        return input.permute(tuple(self.iaxes)).contiguous()
 
     def normal(self, input: torch.Tensor):
         return input

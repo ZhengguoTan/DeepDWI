@@ -129,7 +129,22 @@ class Permute(nn.Module):
             iaxes = np.argsort(self.dims)
             oshape = [self.ishape[a] for a in self.dims]
 
-        return torch.permute(input, tuple(iaxes))
+
+
+class C2R(nn.Module):
+    """View as Real
+
+    Args:
+
+    """
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, input: torch.Tensor):
+        return torch.view_as_real(input)
+
+    def adjoint(self, input: torch.Tensor):
+        return torch.view_as_complex(input)
 
     def normal(self, input: torch.Tensor):
         return input

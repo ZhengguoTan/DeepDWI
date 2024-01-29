@@ -186,7 +186,7 @@ class Trafos(nn.Module):
 
     def forward(self, x: torch.Tensor):
         output = self.P2(self.C2R(self.R2(self.P1(self.R1(x)))))
-        
+
         if output.shape[-3] == 1:
             output = output.squeeze(2)
 

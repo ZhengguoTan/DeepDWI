@@ -131,7 +131,12 @@ class TestZSSSL(unittest.TestCase):
             img_shape = [10, 5, 1, 1, 3, 16, 24]
 
             img = torch.randn(img_shape, dtype=torch.cfloat, device=device)
-            T = zsssl.Trafos(tuple(img_shape + [2]))
-            output = T.adjoint(T(img))
+            for contrasts_in_channels in [True, False]:
 
-            ptt.assert_close(output, img)
+                T = zsssl.Trafos(tuple(img_shape),
+                                 contrasts_in_channels=contrasts_in_channels)
+
+                output = T(img)
+                output = T.adjoint(output)
+
+                ptt.assert_close(output, img)

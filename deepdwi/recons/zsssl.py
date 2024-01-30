@@ -167,38 +167,55 @@ class Dataset(torch.utils.data.Dataset):
 
 # %%
 class Trafos(nn.Module):
-    def __init__(self, ishape: Tuple[int, ...]):
+    def __init__(self, ishape: Tuple[int, ...],
+                 contrasts_in_channels: bool = False,
+                 verbose: bool = False):
         super(Trafos, self).__init__()
 
         N_rep, N_diff, N_shot, N_coil, N_z, N_y, N_x = ishape
 
 
-        self.R1 = util.Reshape(tuple([N_rep] + [N_diff * N_shot * N_coil] + [N_z, N_y, N_x]), ishape)
-        self.P1 = util.Permute(self.R1.oshape, (0, 2, 1, 3, 4))
+        R1_oshape = [N_rep] + [N_diff * N_shot * N_coil] + [N_z, N_y, N_x]
+        P1_oshape = [R1_oshape[0], R1_oshape[2], R1_oshape[1], R1_oshape[3], R1_oshape[4]]
+        D, H, W = R1_oshape[1], R1_oshape[3], R1_oshape[4]
 
-        D, H, W = self.P1.oshape[-3:]
+        R2_oshape = [N_rep * N_z, D, H, W]
+        P2_oshape = [R2_oshape[0], 2, D, H, W]
 
-        self.R2 = util.Reshape((N_rep * N_z, D, H, W), self.P1.oshape)
+        R1 = util.Reshape(tuple(R1_oshape), ishape)
+        P1 = util.Permute(tuple(R1_oshape), (0, 2, 1, 3, 4))
 
-        self.C2R = util.C2R()
+        R2 = util.Reshape(tuple(R2_oshape), P1_oshape)
 
-        self.P2 = util.Permute(tuple(list(self.R2.oshape) + [2]), (0, 4, 1, 2, 3))
+        C2R = util.C2R()
+
+        P2 = util.Permute(tuple(R2_oshape + [2]), (0, 4, 1, 2, 3))
+
+        self.fwd = nn.ModuleList([R1, P1, R2, C2R, P2])
+
+        if contrasts_in_channels is True:
+            R3 = util.Reshape(tuple([P2_oshape[0], 2 * D, H, W]), tuple(P2_oshape))
+            self.fwd.append(R3)
+
+        self.verbose = verbose
 
     def forward(self, x: torch.Tensor):
-        output = self.P2(self.C2R(self.R2(self.P1(self.R1(x)))))
+        output = x.clone()
 
-        if output.shape[-3] == 1:
-            output = output.squeeze(2)
+        for ind, module in enumerate(self.fwd):
+            if self.verbose:
+                print(f"Module {ind + 1}:\n{module}\n")
+            output = module(output)
 
         return output
 
     def adjoint(self, x: torch.Tensor):
-        if x.dim() == 4:
-            input = x.clone().unsqueeze(2)
-        elif x.dim() == 5:
-            input = x.clone()
+        output = x.clone()
 
-        output = self.R1.adjoint(self.P1.adjoint(self.R2.adjoint(self.C2R.adjoint(self.P2.adjoint(input)))))
+        for ind, module in reversed(list(enumerate(self.fwd))):
+            if self.verbose:
+                print(f"Module {ind + 1}:\n{module}\n")
+            output = module.adjoint(output)
 
         return output
 

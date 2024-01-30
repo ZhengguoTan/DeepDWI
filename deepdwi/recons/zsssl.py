@@ -213,7 +213,8 @@ class UnrollNet(nn.Module):
                  requires_grad_lamda: bool = True,
                  N_unroll: int = 10,
                  NN: str = 'Identity',
-                 features: int = 64):
+                 features: int = 64,
+                 max_cg_iter: int = 10):
         super(UnrollNet, self).__init__()
 
         # neural network part
@@ -230,6 +231,8 @@ class UnrollNet(nn.Module):
 
         self.lamda = nn.Parameter(torch.tensor([lamda]), requires_grad=requires_grad_lamda)
         self.N_unroll = N_unroll
+
+        self.max_cg_iter = max_cg_iter
 
     def forward(self, x: torch.Tensor,
                 Train_SENSE_ModuleList: nn.ModuleList,
@@ -249,7 +252,9 @@ class UnrollNet(nn.Module):
         for n in range(self.N_unroll):
             input = T.adjoint(self.NN(T(input)))
 
-            input = _solve_SENSE_ModuleList(Train_SENSE_ModuleList, input, self.lamda)
+            input = _solve_SENSE_ModuleList(Train_SENSE_ModuleList, input,
+                                            lamda=self.lamda,
+                                            max_iter=self.max_cg_iter)
 
         lossf_kspace = _fwd_SENSE_ModuleList(Lossf_SENSE_ModuleList, input)
 

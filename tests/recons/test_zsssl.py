@@ -102,7 +102,8 @@ class TestZSSSL(unittest.TestCase):
             # num_workers must be 0 for GPUs
             Loader = DataLoader(Dataset, batch_size=1, shuffle=True, num_workers=1)
 
-            Model = zsssl.UnrollNet(lamda=1E-6, requires_grad_lamda=False, N_unroll=1).to(device)
+            Model = zsssl.UnrollNet(lamda=1E-6, requires_grad_lamda=False, N_unroll=1,
+                                    max_cg_iter=50).to(device)
 
             for i, (mps_b, ksp_b, train_mask_b, lossf_mask_b, phase_shot_b, phase_slice_b) in enumerate(Loader):
 

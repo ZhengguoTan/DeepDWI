@@ -61,7 +61,8 @@ class Sense(nn.Module):
         self.coils = coils.to(self.device)
 
         # k-space data shape in accordance with dims.py
-        N_time, N_echo, N_coil, N_z, N_y, N_x = y.shape
+        N_time, N_echo, N_coil, N_z, N_y, N_x = y.shape[-6:]
+        extra_shapes = y.shape[:-6]
 
         # deal with collapsed y even for SMS
         assert(1 == N_z)
@@ -89,7 +90,7 @@ class Sense(nn.Module):
             else:
                 self.basis = basis
 
-            ishape = [x_time] + [1] + img_shape  # TODO:
+            ishape = list(extra_shapes) + [x_time] + [1] + img_shape  # TODO:
 
         else:
             x_time = N_time
@@ -97,12 +98,12 @@ class Sense(nn.Module):
 
             if combine_echo is True:
 
-                assert(phase_echo is not None)
-                ishape = [x_time] + [1] + img_shape
+                assert(phase_echo is not None or N_echo == 1)
+                ishape = list(extra_shapes) + [x_time] + [1] + img_shape
 
             else:
 
-                ishape = [x_time] + [N_echo] + img_shape
+                ishape = list(extra_shapes) + [x_time] + [N_echo] + img_shape
 
         # echo or shot
         if phase_echo is not None:

@@ -109,17 +109,18 @@ class Trafos(nn.Module):
         super(Trafos, self).__init__()
 
         N_rep, N_diff, N_shot, N_coil, N_z, N_y, N_x = ishape
+        self.ishape = ishape
 
 
         R1_oshape = [N_rep] + [N_diff * N_shot * N_coil] + [N_z, N_y, N_x]
-        P1_oshape = [R1_oshape[0], R1_oshape[2], R1_oshape[1], R1_oshape[3], R1_oshape[4]]
-        D, H, W = R1_oshape[1], R1_oshape[3], R1_oshape[4]
+        P1_oshape = [R1_oshape[0], R1_oshape[2], R1_oshape[1], R1_oshape[4], R1_oshape[3]]
+        D, H, W = P1_oshape[-3], P1_oshape[-2], P1_oshape[-1]
 
         R2_oshape = [N_rep * N_z, D, H, W]
         P2_oshape = [R2_oshape[0], 2, D, H, W]
 
         R1 = util.Reshape(tuple(R1_oshape), ishape)
-        P1 = util.Permute(tuple(R1_oshape), (0, 2, 1, 3, 4))
+        P1 = util.Permute(tuple(R1_oshape), (0, 2, 1, 4, 3))
 
         R2 = util.Reshape(tuple(R2_oshape), P1_oshape)
 
@@ -130,8 +131,14 @@ class Trafos(nn.Module):
         self.fwd = nn.ModuleList([R1, P1, R2, C2R, P2])
 
         if contrasts_in_channels is True:
-            R3 = util.Reshape(tuple([P2_oshape[0], 2 * D, H, W]), tuple(P2_oshape))
+            P3 = util.Permute(tuple(P2_oshape), (0, 2, 1, 3, 4))
+            self.fwd.append(P3)
+            R3 = util.Reshape(tuple([P2_oshape[0], 2 * D, H, W]), P3.oshape)
             self.fwd.append(R3)
+
+            self.oshape = R3.oshape
+        else:
+            self.oshape = P2.oshape
 
         self.verbose = verbose
 

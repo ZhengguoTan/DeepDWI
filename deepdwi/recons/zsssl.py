@@ -162,6 +162,27 @@ class Trafos(nn.Module):
 
         return output
 
+
+# %%
+def conj_grad(AHA, AHy, max_iter: int = 6, tol: float = 0.):
+
+    x = torch.zeros_like(AHy)
+    i, r, p = 0, AHy, AHy
+    rTr = torch.sum(r.conj()*r).real
+    while i < max_iter and rTr > 1e-10:
+        Ap = AHA(p)
+        alpha = rTr / torch.sum(p.conj()*Ap).real
+        alpha = alpha
+        x = x + alpha * p
+        r = r - alpha * Ap
+        rTrNew = torch.sum(r.conj()*r).real
+        beta = rTrNew / rTr
+        beta = beta
+        p = r + beta * p
+        i += 1
+        rTr = rTrNew
+    return x
+
 # %%
 class UnrollNet(nn.Module):
     """

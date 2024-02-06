@@ -190,34 +190,57 @@ class UnrollNet(nn.Module):
         TODO: docomentation
     """
     def __init__(self,
+                 ishape: Tuple[int, ...],
                  lamda: float = 0.01,
                  requires_grad_lamda: bool = True,
+                 N_residual_block: int = 5,
                  N_unroll: int = 10,
                  NN: str = 'Identity',
                  features: int = 64,
-                 max_cg_iter: int = 10):
+                 max_cg_iter: int = 10,
+                 contrasts_in_channels: bool = False):
         super(UnrollNet, self).__init__()
 
+        self.T = Trafos(ishape,
+                        contrasts_in_channels=contrasts_in_channels)
+
+        print('> Trafos oshape: ', self.T.oshape)
+
         # neural network part
-        if NN == 'ResNet3D':
-            self.NN = resnet.ResNet3D(in_channels=2, N_residual_block=5,
-                                      features=features)
+        self.NN = NN
+        self.features = features
+
+        if self.NN == 'ResNet3D':
+            self.NN_Module = resnet.ResNet3D(in_channels=self.T.oshape[1],
+                                             N_residual_block=N_residual_block,
+                                             features=self.features)
             print('> Use ResNet3D')
-        elif NN == 'ResNet2D':
-            self.NN = resnet.ResNet2D(in_channels=2, N_residual_block=5,
-                                      features=features)
+        elif self.NN == 'ResNet2D':
+            self.NN_Module = resnet.ResNet2D(in_channels=self.T.oshape[1],
+                                             N_residual_block=N_residual_block,
+                                             features=self.features)
             print('> Use ResNet2D')
-        elif NN == 'Identity':
-            self.NN = nn.Identity()
+        elif self.NN == 'Identity':
+            self.NN_Module = nn.Identity()
+        elif self.NN == 'ResNetMAPLE':
+            self.NN_Module = resnet.ResNetMAPLE(in_channels=self.T.oshape[1],
+                                             N_residual_block=N_residual_block,
+                                             features=self.features)
+            print('> Use ResNetMAPLE')
 
         self.lamda = nn.Parameter(torch.tensor([lamda]), requires_grad=requires_grad_lamda)
         self.N_unroll = N_unroll
 
         self.max_cg_iter = max_cg_iter
+        self.contrasts_in_channels = contrasts_in_channels
 
-    def forward(self, x: torch.Tensor,
-                Train_SENSE_ModuleList: nn.ModuleList,
-                Lossf_SENSE_ModuleList: nn.ModuleList):
+    def forward(self,
+                sens: torch.Tensor,
+                kspace: torch.Tensor,
+                train_mask: torch.Tensor,
+                lossf_mask: torch.Tensor,
+                phase_echo: torch.Tensor = None,
+                phase_slice: torch.Tensor = None):
         """
         Args:
             * ikspace (torch.Tensor): input k-space
@@ -225,21 +248,37 @@ class UnrollNet(nn.Module):
         Return:
             * okspace (torch.Tensor): output k-space
         """
-        input = x.clone()
 
-        T = Trafos(input.shape)
+        train_kspace = train_mask * kspace
+        SenseT = mri.Sense(sens, train_kspace,
+                           phase_echo=phase_echo, combine_echo=True,
+                           phase_slice=phase_slice)
 
+        x = SenseT.adjoint(SenseT.y)  # x0: AHy
+
+        refer_kspace = lossf_mask * kspace
+        SenseL = mri.Sense(sens, refer_kspace,
+                           phase_echo=phase_echo, combine_echo=True,
+                           phase_slice=phase_slice)
 
         for n in range(self.N_unroll):
-            input = T.adjoint(self.NN(T(input)))
+            x = self.T(x)
+            x = x.float()
+            x = self.T.adjoint(self.NN_Module(x))
 
-            input = _solve_SENSE_ModuleList(Train_SENSE_ModuleList, input,
-                                            lamda=self.lamda,
-                                            max_iter=self.max_cg_iter)
+            AHA = lambda x: SenseT.adjoint(SenseT(x)) + self.lamda * x
+            AHy = SenseT.adjoint(SenseT.y) + self.lamda * x
 
-        lossf_kspace = _fwd_SENSE_ModuleList(Lossf_SENSE_ModuleList, input)
+            # CG = lsqr.ConjugateGradient(AHA, AHy, torch.zeros_like(AHy),
+            #                             max_iter=self.max_cg_iter,
+            #                             tol=0., verbose=False)
 
-        return input, self.lamda, lossf_kspace
+            # x = CG()
+            x = conj_grad(AHA, AHy, max_iter=self.max_cg_iter)
+
+        lossf_kspace = SenseL(x)
+
+        return x, self.lamda, lossf_kspace, refer_kspace
 
 # %%
 class MixL1L2Loss(nn.Module):

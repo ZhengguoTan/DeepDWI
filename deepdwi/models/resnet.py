@@ -22,12 +22,12 @@ def batch_norm(is_batch_norm,features):
     else:
         return nn.Identity()
 
-def conv_layer(filter_size, padding=1, is_batch_norm=False, activation_type='ReLU'):
+def conv_layer(filter_size, padding='same', is_batch_norm=False, activation_type='ReLU'):
     kernel_size, in_c, out_c = filter_size
     return nn.Sequential(nn.Conv2d(in_channels=in_c,
                                    out_channels=out_c,
                                    kernel_size=kernel_size,
-                                   padding=padding,bias=False),
+                                   padding=padding,bias=True),
                          batch_norm(is_batch_norm,in_c),
                          activation_func(activation_type))
 
@@ -71,11 +71,53 @@ class ResNet2D(nn.Module):
         l1_out = self.layer1(input_x)
         l2_out = self.layer2(l1_out)
         l3_out = self.layer3(l2_out)
-        temp = l3_out+l1_out
+        temp = l3_out + l1_out
         nw_out = self.layer4(temp)
 
         return nw_out
 
+
+# %%
+class ResNetMAPLE(nn.Module):
+    """
+    Reference:
+        * Heydari A, Ahmadi A, Kim TH, Bilgic B.
+          Joint MAPLE: Accelerated joint T1 and T2* mapping with scan-specific self-supervised networks.
+          Magn Reson Med (2024). doi: 10.1002/mrm.29989
+    """
+    def __init__(self, in_channels: int = 2,
+                 N_residual_block: int = 5,
+                 features: int = 64):
+        super(ResNetMAPLE, self).__init__()
+
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=features, kernel_size=3, padding='same')
+        self.conv2 = nn.Conv2d(in_channels=features, out_channels=features, kernel_size=3, padding='same')
+        self.conv3 = nn.Conv2d(in_channels=features, out_channels=in_channels, kernel_size=3, padding='same')
+
+        self.N_residual_block = N_residual_block
+        self.resnet_layers = nn.ModuleList()
+        for k in range(N_residual_block):
+            self.resnet_layers.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding='same'))
+
+        self.activate = nn.ReLU()
+
+    def forward(self, x):
+
+        x = self.conv1(x)
+        first_layer = x
+        for j in range(self.N_residual_block):
+            previous_layer = x
+            m = self.resnet_layers[j]
+            x = self.activate(m(x))
+            x = m(x)
+            x = torch.mul(x, torch.tensor([0.1],dtype=torch.float32).to(x.device))
+            x = x + previous_layer
+
+        rb_output = self.conv2(x)
+        temp_output = rb_output + first_layer
+        x = self.conv3(temp_output)
+
+        return x
 
 
 # %% ResNet 3D

@@ -284,137 +284,26 @@ class MixL1L2Loss(nn.Module):
         self.eps = eps
         self.scalar = scalar
 
-    def forward(self, yhat, y):
+    def forward(self, y_est, y_ref):
 
-        loss = self.scalar*(torch.norm(yhat-y) / torch.norm(y)) +\
-                self.scalar*(torch.norm(yhat-y, p=1) / torch.norm(y, p=1))
+        y1 = torch.view_as_real(y_est)
+        y2 = torch.view_as_real(y_ref)
+
+        scalar = torch.tensor([0.5], dtype=torch.float32).to(y_est.device)
+
+        loss = torch.mul(scalar, torch.linalg.norm(y1 - y2)) / torch.linalg.norm(y2) + torch.mul(scalar, torch.linalg.norm(torch.flatten(y1 - y2), ord=1))  / torch.linalg.norm(torch.flatten(y2),ord=1)
 
         return loss
 
-# %%
-def train(Model, DataLoader, lossf, optim,
-          device=torch.device('cpu'),
-          dtype=torch.complex64):
-    train_lossv = 0
-    # Model = torch.nn.DataParallel(Model)
-    Model = Model.to(device)
-    Model.train()
-    for ii, (sens, kspace, train_mask, lossf_mask, phase_shot, phase_slice) in enumerate(DataLoader):
+class NRMSELoss(nn.Module):
+    def __init__(self, eps=1e-6):
+        super().__init__()
+        self.eps = eps
 
-        sens = sens.to(device).type(dtype)
-        kspace = kspace.to(device).type(dtype)
-        train_mask = train_mask.to(device).type(dtype)
-        lossf_mask = lossf_mask.to(device).type(dtype)
-        phase_shot = phase_shot.to(device).type(dtype)
-        phase_slice = phase_slice.to(device).type(dtype)
+    def forward(self, y_est, y_ref):
 
-        train_kspace = train_mask * kspace
-        Train_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
-                                                         train_kspace,
-                                                         phase_shot,
-                                                         phase_slice)
+        # mean = torch.mean(abs(y_ref))
+        mean = torch.max(abs(y_ref)) - torch.min(abs(y_ref))
+        loss = nn.functional.mse_loss(torch.view_as_real(y_est), torch.view_as_real(y_ref)) / mean
 
-        x = _adj_SENSE_ModuleList(Train_SENSE_ModuleList)
-
-        lossf_kspace = lossf_mask * kspace
-        Lossf_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
-                                                         lossf_kspace,
-                                                         phase_shot,
-                                                         phase_slice)
-
-        # apply Model
-        x, lamda, ynet = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
-
-        del Train_SENSE_ModuleList
-        del Lossf_SENSE_ModuleList
-
-        # loss
-        lossv = lossf(ynet, lossf_kspace)
-
-        # back propagation
-        optim.zero_grad()
-        lossv.backward()
-        optim.step()
-
-        train_lossv += lossv.item()/ len(DataLoader)
-
-    return train_lossv, lamda
-
-# %%
-def valid(Model, DataLoader, lossf, optim,
-          device=torch.device('cpu'),
-          dtype=torch.complex64):
-    valid_lossv = 0
-    # Model = torch.nn.DataParallel(Model)
-    Model = Model.to(device)
-    Model.eval()
-    with torch.no_grad():
-        for ii, (sens, kspace, train_mask, lossf_mask, phase_shot, phase_slice) in enumerate(DataLoader):
-
-            # to device
-            sens = sens.to(device).type(dtype)
-            kspace = kspace.to(device).type(dtype)
-            train_mask = train_mask.to(device).type(dtype)
-            lossf_mask = lossf_mask.to(device).type(dtype)
-            phase_shot = phase_shot.to(device).type(dtype)
-            phase_slice = phase_slice.to(device).type(dtype)
-
-            train_kspace = train_mask * kspace
-            Train_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
-                                                            train_kspace,
-                                                            phase_shot,
-                                                            phase_slice)
-
-            x = _adj_SENSE_ModuleList(Train_SENSE_ModuleList)
-
-            lossf_kspace = lossf_mask * kspace
-            Lossf_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
-                                                            lossf_kspace,
-                                                            phase_shot,
-                                                            phase_slice)
-
-            # apply Model
-            x, lamda, ynet = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
-
-            # loss
-            lossv = lossf(ynet, lossf_kspace)
-
-            valid_lossv += lossv.item()/ len(DataLoader)
-
-    return valid_lossv
-
-# %%
-def test(Model, DataLoader,
-          device=torch.device('cpu'),
-          dtype=torch.complex64):
-    Model = Model.to(device)
-    Model.eval()
-    with torch.no_grad():
-        for ii, (sens, kspace, train_mask, lossf_mask, phase_shot, phase_slice) in enumerate(DataLoader):
-
-            # to device
-            sens = sens.to(device).type(dtype)
-            kspace = kspace.to(device).type(dtype)
-            train_mask = train_mask.to(device).type(dtype)
-            lossf_mask = lossf_mask.to(device).type(dtype)
-            phase_shot = phase_shot.to(device).type(dtype)
-            phase_slice = phase_slice.to(device).type(dtype)
-
-            train_kspace = train_mask * kspace
-            Train_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
-                                                            train_kspace,
-                                                            phase_shot,
-                                                            phase_slice)
-
-            x = _adj_SENSE_ModuleList(Train_SENSE_ModuleList)
-
-            lossf_kspace = lossf_mask * kspace
-            Lossf_SENSE_ModuleList = _build_SENSE_ModuleList(sens,
-                                                            lossf_kspace,
-                                                            phase_shot,
-                                                            phase_slice)
-
-            # apply Model
-            x, lamda, ynet = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
-
-    return x
+        return loss

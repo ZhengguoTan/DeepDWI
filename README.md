@@ -19,6 +19,7 @@ In the world of [PyTorch](https://pytorch.org/), deep learning reconstruction fo
 
 ## TODO:
 
+* add VAE examples
 * use sphinx to create documentation
 * cupy is not installed correctly
 *

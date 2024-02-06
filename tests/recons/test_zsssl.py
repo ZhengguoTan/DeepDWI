@@ -1,5 +1,7 @@
 import unittest
 
+import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.testing as ptt
@@ -92,41 +94,7 @@ class TestZSSSL(unittest.TestCase):
                 ptt.assert_close(phase_shot_b, phase_shot.to(device))
                 ptt.assert_close(phase_slice_b, phase_slice.to(device))
 
-    def test_model(self):
-        ksp, train_mask, lossf_mask, mps, img, phase_shot, phase_slice = self._setup_y_PFCx()
-
-        for device in devices:
-
-            Dataset = zsssl.Dataset(mps, ksp, train_mask, lossf_mask, phase_shot, phase_slice)
-
-            # num_workers must be 0 for GPUs
-            Loader = DataLoader(Dataset, batch_size=1, shuffle=True, num_workers=1)
-
-            Model = zsssl.UnrollNet(lamda=1E-6, requires_grad_lamda=False, N_unroll=1,
-                                    max_cg_iter=50).to(device)
-
-            for i, (mps_b, ksp_b, train_mask_b, lossf_mask_b, phase_shot_b, phase_slice_b) in enumerate(Loader):
-
-                mps_b = mps_b.to(device)
-                ksp_b = ksp_b.to(device)
-                train_mask_b = train_mask_b.to(device)
-                lossf_mask_b = lossf_mask_b.to(device)
-                phase_shot_b = phase_shot_b.to(device)
-                phase_slice_b = phase_slice_b.to(device)
-
-                train_ksp_b = train_mask_b * ksp_b
-                Train_SENSE_ModuleList = zsssl._build_SENSE_ModuleList(mps_b, train_ksp_b, phase_shot_b, phase_slice_b)
-
-                lossf_ksp_b = lossf_mask_b * ksp_b
-                Lossf_SENSE_ModuleList = zsssl._build_SENSE_ModuleList(mps_b, lossf_ksp_b, phase_shot_b, phase_slice_b)
-
-                x = torch.zeros_like(img, device=device)
-
-                x, lamda, _ = Model(x, Train_SENSE_ModuleList, Lossf_SENSE_ModuleList)
-
-                ptt.assert_close(x, img.to(device))
-
-    def test_trafos(self):
+    def test_trafos_normal(self):
         for device in devices:
             img_shape = [10, 5, 1, 1, 3, 16, 24]
 
@@ -140,3 +108,50 @@ class TestZSSSL(unittest.TestCase):
                 output = T.adjoint(output)
 
                 ptt.assert_close(output, img)
+
+    def test_trafos(self):
+        for device in devices:
+            dd_shape = [1, 18, 1, 1, 1, 192, 224]
+
+            img_dd = torch.randn(dd_shape, dtype=torch.cfloat, device=device)
+
+            T = zsssl.Trafos(tuple(dd_shape), contrasts_in_channels=True)
+            fwd_dd = T(img_dd)
+            adj_dd = T.adjoint(fwd_dd)
+            print('> fwd_dd shape: ', fwd_dd.shape, ', adj_dd shape: ', adj_dd.shape)
+
+            img_jm = torch.view_as_real(torch.squeeze(img_dd))
+            img_jm = img_jm.permute(2, 1, 0, 3).unsqueeze(0)
+            jm_shape = img_jm.shape
+            print('> img_jm shape: ', jm_shape)
+
+            fwd_jm = img_jm.contiguous().view((jm_shape[0], jm_shape[1], jm_shape[2], jm_shape[3]*jm_shape[4]))
+            fwd_jm = fwd_jm.permute(0, 3, 1, 2)
+
+            adj_jm = fwd_jm.permute(0, 2, 3, 1)
+            adj_jm = adj_jm.view((jm_shape))
+            print('> fwd_jm shape: ', fwd_jm.shape, ', adj_jm shape: ', adj_jm.shape)
+
+            adj_jm = adj_jm.squeeze(0).permute(2, 1, 0, 3)
+            adj_jm = torch.view_as_complex(adj_jm)
+            adj_jm = adj_jm[None, :, None, None, None, :, :]
+            print('> adj_jm shape: ', adj_jm.shape)
+
+            ptt.assert_close(fwd_dd, fwd_jm)
+            ptt.assert_close(adj_dd, adj_jm)
+
+    def test_unrollnet(self):
+
+        ishape = [1, 18, 1, 1, 1, 192, 224]
+
+        model = zsssl.UnrollNet(ishape, lamda=0.05, NN='ResNet2D',
+                                requires_grad_lamda=True,
+                                N_residual_block=12,
+                                N_unroll=8,
+                                features=128,
+                                contrasts_in_channels=True,
+                                max_cg_iter=6)
+
+        model_parameters = filter(lambda p: p.requires_grad, model.parameters())
+        params = sum([np.prod(p.size()) for p in model_parameters])
+        print(">>> number of trainable parameters is: ", params)

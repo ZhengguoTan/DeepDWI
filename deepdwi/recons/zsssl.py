@@ -19,12 +19,13 @@ def uniform_samp(mask: torch.Tensor, rho: float = 0.2,
 
     N_y, N_x = mask.shape[-2:]
 
+    # TODO: find the k-space center instead?
     C_y, C_x = N_y // 2, N_x // 2
 
     # mask_outer that excludes the ACS region
     outer_mask = mask.clone()
-    outer_mask[..., acs_block[-2] - C_y : acs_block[-2] + C_y,
-               acs_block[-1] - C_x : acs_block[-1] + C_x] = 0
+    outer_mask[..., C_y - acs_block[-2] : C_y + acs_block[-2],
+               C_x - acs_block[-1] : C_x + acs_block[-1]] = 0
 
     nonzero_ind = torch.nonzero(outer_mask)  # indices of nonzero points
     N_nonzero = len(nonzero_ind)             # number of nonzero points

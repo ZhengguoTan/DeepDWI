@@ -11,6 +11,7 @@ import sigpy as sp
 import torch.nn as nn
 
 from deepdwi.dims import *
+from deepdwi.models import mri
 from deepdwi.recons import zsssl
 from torch.utils.data import DataLoader
 
@@ -231,9 +232,8 @@ if __name__ == "__main__":
     print('>>> lossf_mask shape\t: ', lossf_mask.shape, ' type: ', lossf_mask.dtype)
     print('>>> valid_mask shape\t: ', valid_mask.shape, ' type: ', valid_mask.dtype)
 
-    S = zsssl._build_SENSE_ModuleList(coil7[[0]], mask * kdat7[[0]])
-
-    ishape = [data_conf['batch_size']] + list(S[0].ishape)
+    S = mri.Sense(coil7[[0]], mask * kdat7[[0]])
+    ishape = [data_conf['batch_size']] + list(S.ishape[-6:])
     print('>>> ishape to UnrollNet: ', ishape)
     del S
 
@@ -274,7 +274,6 @@ if __name__ == "__main__":
         optim = torch.optim.SGD(model.parameters(), lr=optim_conf['lr'])
 
     # %% train and valid
-    total_train_loss, total_valid_loss = [], []
     valid_loss_min = np.inf
 
     epoch, valid_loss_tracker = 0, 0
@@ -354,9 +353,9 @@ if __name__ == "__main__":
 
     # %% inference
     infer_data = Dataset(coil7[[0]], kdat7[[0]], mask[np.newaxis], mask[np.newaxis])
-    infer_load = DataLoader(infer_data, batch_size=1, shuffle=True, num_workers=6)
+    infer_load = DataLoader(infer_data, batch_size=1)
 
-    best_checkpoint = torch.load(os.path.join(DIR, 'best.pth'))
+    best_checkpoint = torch.load(os.path.join(DIR, 'maple_best.pth'))
     model.load_state_dict(best_checkpoint["model_state"])
 
     # --- valid ---

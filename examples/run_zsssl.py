@@ -26,7 +26,7 @@ print('> data directory: ', DAT_DIR)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 device_sp = sp.Device(0 if torch.cuda.is_available() else -1)
 
-torch.manual_seed(0)
+# torch.manual_seed(0)
 
 
 # %%
@@ -41,6 +41,7 @@ def prep_data(data_file: str,
     N_slices = f['Slices'][()]
     N_segments = f['Segments'][()]
     N_Accel_PE = f['Accel_PE'][()]
+    # slice_idx = f['slice_idx'][()]
     f.close()
 
     kdat = np.squeeze(kdat)  # 4 dim
@@ -402,6 +403,8 @@ if __name__ == "__main__":
         best_checkpoint = torch.load(os.path.join(DIR, 'zsssl_best.pth'))
     else:
         best_checkpoint = torch.load(HOME_DIR + config_dict['checkpoint'])
+        best_epoch = best_checkpoint['epoch']
+        print('> loaded best checkpoint at the ' + str(best_epoch+1).zfill(3) + 'th epoch')
 
     model.load_state_dict(best_checkpoint["model_state"])
 

@@ -33,6 +33,8 @@ In the world of [PyTorch](https://pytorch.org/), deep learning reconstruction fo
 
 * Yang M, Ma D, Jiang Y, Hamilton J, Seiberlich N, Griswold MA, McGivney DF. [Low rank approximation methods for MR fingerprinting with large scale dictionaries](https://doi.org/10.1002/mrm.26867). Magn Reson Med 2018;79:2392-2400.
 
+* Dong Z, Wang F, Chan KS, Reese TG, Bilgic B, Marques JP, Setsompop K. [Variable flip angle echo planar time-resolved imaging (vFA-EPTI) for fast high-resolution gradient echo myelin water imaging](https://doi.org/10.1016/j.neuroimage.2021.117897). NeuroImage 2021;232.
+
 * Lam F, Li Y, Peng X. [Constrained Magnetic Resonance Spectroscopic Imaging by Learning Nonlinear Low-Dimensional Models](https://doi.org/10.1109/TMI.2019.2930586). IEEE Trans Med Imaging 2020;39:545-555.
 
 * Mani M, Magnotta VA, Jacob M. [qModeL: A plug-and-play model-based reconstruction for highly accelerated multi-shot diffusion MRI using learned priors](https://doi.org/10.1002/mrm.28756). Magn Reson Med. 2021;86:835-851.

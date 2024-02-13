@@ -31,9 +31,13 @@ In the world of [PyTorch](https://pytorch.org/), deep learning reconstruction fo
 
 * Tamir JI, Uecker M, Chen W, Lai P, Alley MT, Vasanawala SS, Lustig M. [T2 shuffling: Sharp, multicontrast, volumetric fast spin-echo imaging](https://doi.org/10.1002/mrm.26102). Magn Reson Med 2017;77:180-195.
 
-* Yang M, Ma D, Jiang Y, Hamilton J, Seiberlich N, Griswold MA, McGivney DF. [Low rank approximation methods for MR fingerprinting with large scale dictionaries](https://doi.org/10.1002/mrm.26867). Magn Reson Med 2018;79:2392-2400.
-
 * Dong Z, Wang F, Chan KS, Reese TG, Bilgic B, Marques JP, Setsompop K. [Variable flip angle echo planar time-resolved imaging (vFA-EPTI) for fast high-resolution gradient echo myelin water imaging](https://doi.org/10.1016/j.neuroimage.2021.117897). NeuroImage 2021;232.
+
+* Hammernik K, Klatzer T, Kobler E, Recht MP, Sodickson DK, Pock T, Knoll F. [Learning a variational network for reconstruction of accelerated MRI data](https://doi.org/10.1002/mrm.26977). Magn Reson Med 2018;79:3055-3071.
+
+* Aggarwal HK, Mani MP, Jacob M. [MoDL: Model-Based Deep Learning Architecture for Inverse Problems](https://doi.org/10.1109/TMI.2018.2865356). IEEE Trans Med Imaging 2019;38:394-405.
+
+* Yaman B, Hosseini SAH, Moeller S, Ellermann J, Uğurbil K, Akçakaya M. [Self-supervised learning of physics-guided reconstruction neural networks without fully sampled reference data](https://doi.org/10.1002/mrm.28378). Magn Reson Med 2020;84:3172-3191.
 
 * Lam F, Li Y, Peng X. [Constrained Magnetic Resonance Spectroscopic Imaging by Learning Nonlinear Low-Dimensional Models](https://doi.org/10.1109/TMI.2019.2930586). IEEE Trans Med Imaging 2020;39:545-555.
 

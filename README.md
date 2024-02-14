@@ -12,6 +12,7 @@ In the world of [PyTorch](https://pytorch.org/), deep learning reconstruction fo
 
 ## Installation
 
+* please follow the instructions to install cupy: https://docs.cupy.dev/en/stable/install.html
 
 
 ## Features
@@ -52,5 +53,3 @@ In the world of [PyTorch](https://pytorch.org/), deep learning reconstruction fo
 
 * add VAE examples
 * use sphinx to create documentation
-* cupy is not installed correctly
-*

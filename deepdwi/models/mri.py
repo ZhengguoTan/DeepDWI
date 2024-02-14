@@ -26,6 +26,7 @@ class Sense(nn.Module):
         y (Tensor): sampled k-space data.
         basis (Tensor or nn.Module or Callable function): basis projection. Default is None.
         N_basis (int): Number of basis. Only used when basis is Callable or nn.Module. Default is 7.
+        baseline (Tensor): the baseline image to be multiplied with the basis model output. Default is None.
         phase_echo (Tensor): phase maps of echoes or shots. Default is None.
         combine_echo (bool): reconstruct only one echo or combine shots. Default is None.
         phase_slice (Tensor): multi-band slices phases. Default is None.
@@ -45,6 +46,7 @@ class Sense(nn.Module):
                  y: torch.Tensor,
                  basis: Union[torch.Tensor, nn.Module, Callable] = None,
                  N_basis: int = 7,
+                 baseline: torch.Tensor = None,
                  phase_echo: torch.Tensor = None,
                  combine_echo: bool = False,
                  phase_slice: torch.Tensor = None,
@@ -105,6 +107,8 @@ class Sense(nn.Module):
 
                 ishape = list(extra_shapes) + [x_time] + [N_echo] + img_shape
 
+        self.baseline = baseline
+
         # echo or shot
         if phase_echo is not None:
             self.phase_echo = phase_echo.to(self.device)
@@ -137,6 +141,9 @@ class Sense(nn.Module):
         if jit.isinstance(self.basis, torch.Tensor) or jit.isinstance(self.basis, nn.Module):
             self.basis = self.basis.to(self.device)
 
+        if self.baseline is not None:
+            self.baseline = self.baseline.to(self.device)
+
         if self.phase_echo is not None:
             self.phase_echo = self.phase_echo.to(self.device)
 
@@ -157,22 +164,27 @@ class Sense(nn.Module):
         img_shape = list(x.shape[1:])
 
         # subspace modeling
-        if jit.isinstance(self.basis, torch.Tensor):
-            # linear subspace matrix
-            N_ful, N_sub = self.basis.shape
-            x1 = self.basis @ x.view(x.shape[0], -1)
+        if self.basis is not None:
 
-            x_proj = x1.view([N_ful] + img_shape)
+            if jit.isinstance(self.basis, torch.Tensor):
+                # linear subspace matrix
+                N_ful, N_sub = self.basis.shape
+                x1 = self.basis @ x.view(x.shape[0], -1)
 
-        elif jit.isinstance(self.basis, nn.Module):
-            # deep nonlinear subspace
-            x1 = x.view(x.shape[0], -1).T
-            x2 = self.basis.decode(x1)
+                x_proj = x1.view([N_ful] + img_shape)
 
-            x_proj = x2.T.view([self.y.shape[0]] + img_shape)
+            elif jit.isinstance(self.basis, nn.Module):
+                # deep nonlinear subspace
+                x1 = x.view(x.shape[0], -1).T
+                x2 = self.basis.decode(x1)
 
-        elif jit.isinstance(self.basis, Callable):
-            x_proj = self.basis(x)
+                x_proj = x2.T.view([self.y.shape[0]] + img_shape)
+
+            elif jit.isinstance(self.basis, Callable):
+                x_proj = self.basis(x)
+
+            if self.baseline is not None:
+                x_proj = self.baseline * x_proj
 
         else:
             x_proj = x

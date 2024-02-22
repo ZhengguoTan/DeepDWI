@@ -201,6 +201,10 @@ class UnrollNet(nn.Module):
                  contrasts_in_channels: bool = False):
         super(UnrollNet, self).__init__()
 
+        if NN == 'ResNet3D':
+            contrasts_in_channels = False
+            print('> set contrasts_in_channels to False!')
+
         self.T = Trafos(ishape,
                         contrasts_in_channels=contrasts_in_channels)
 

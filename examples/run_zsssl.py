@@ -1,6 +1,7 @@
 import argparse
 import h5py
 import os
+import pathlib
 import time
 import torch
 import yaml
@@ -10,6 +11,7 @@ import numpy as np
 import sigpy as sp
 import torch.nn as nn
 
+from deepdwi import util
 from deepdwi.dims import *
 from deepdwi.models import mri
 from deepdwi.recons import zsssl
@@ -19,6 +21,7 @@ from torch.utils.data import DataLoader
 DIR = os.path.dirname(os.path.realpath(__file__))
 
 HOME_DIR = DIR.rsplit('/', 1)[0]
+print('> HOME: ', HOME_DIR)
 
 DAT_DIR = DIR.rsplit('/', 1)[0] + '/data'
 print('> data directory: ', DAT_DIR)
@@ -111,7 +114,7 @@ def prep_data(data_file: str,
                                 yshift=yshift,
                                 device=device_sp)
 
-    _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x])
+    _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=2)
 
     return coil2, kdat_prep, dwi_shot_phase, sms_phase, mask
 
@@ -192,7 +195,7 @@ if __name__ == "__main__":
     with open(HOME_DIR + args.config, 'r') as f:
         config_dict = yaml.load(f, Loader=yaml.FullLoader)
 
-    # print('> yaml config: ', config_dict)
+
     data_conf = config_dict.get('data', {})
     print('> data_conf: ')
     print('    kdat: ', data_conf['kdat'])
@@ -207,6 +210,7 @@ if __name__ == "__main__":
     model_conf = config_dict.get('model', {})
     print('> model_conf: ')
     print('    net: ', model_conf['net'])
+    print('    N_residual_block: ', model_conf['N_residual_block'])
     print('    requires_grad_lamda: ', model_conf['requires_grad_lamda'])
     print('    N_unroll: ', model_conf['N_unroll'])
     print('    features: ', model_conf['features'])
@@ -227,6 +231,29 @@ if __name__ == "__main__":
 
     mode_conf = config_dict['mode']
     print('> mode: ', mode_conf)
+
+    if mode_conf == 'test':
+        print('> checkpoint: ', config_dict['checkpoint'])
+
+    if mode_conf == 'train':
+        RECON_DIR = util.set_output_dir(DIR, config_dict)
+
+        yaml_file = 'zsssl.yaml'
+
+    elif mode_conf == 'test':
+
+        relative_path = config_dict['checkpoint'].rsplit('/', 1)[0]
+        RECON_DIR = HOME_DIR + relative_path
+
+        yaml_file = 'zsssl_slice_' + str(data_conf['slice_idx']).zfill(3) + '.yaml'
+
+    print('> RECON_DIR: ', RECON_DIR)
+    # make a new directory if not exist
+    pathlib.Path(RECON_DIR).mkdir(parents=True, exist_ok=True)
+
+    with open(os.path.join(RECON_DIR, yaml_file), 'w') as f:
+        f.write(yaml.dump(config_dict, sort_keys=False))
+
 
     # %%
     coil4, kdat6, phase_shot, phase_slice, mask = prep_data(data_conf['kdat'], data_conf['coil'],
@@ -302,6 +329,7 @@ if __name__ == "__main__":
         optim = torch.optim.SGD(model.parameters(), lr=optim_conf['lr'])
 
     # %% train and valid
+    checkpoint_name = 'zsssl_best.pth'
     if mode_conf != 'test':
         valid_loss_min = np.inf
 
@@ -377,7 +405,7 @@ if __name__ == "__main__":
 
             if valid_loss <= valid_loss_min:
                 valid_loss_min = valid_loss
-                torch.save(checkpoint, os.path.join(DIR, "zsssl_best.pth"))
+                torch.save(checkpoint, os.path.join(RECON_DIR, checkpoint_name))
                 # reset the val loss tracker each time a new lowest val error is achieved
                 valid_loss_tracker = 0
             else:
@@ -400,7 +428,7 @@ if __name__ == "__main__":
     infer_load = DataLoader(infer_data, batch_size=1)
 
     if mode_conf != 'test':
-        best_checkpoint = torch.load(os.path.join(DIR, 'zsssl_best.pth'))
+        best_checkpoint = torch.load(os.path.join(RECON_DIR, checkpoint_name))
     else:
         best_checkpoint = torch.load(HOME_DIR + config_dict['checkpoint'])
         best_epoch = best_checkpoint['epoch']
@@ -427,6 +455,6 @@ if __name__ == "__main__":
 
     x_infer = np.array(x_infer)
 
-    f = h5py.File(DIR + '/zsssl_slice_' + str(data_conf['slice_idx']).zfill(3) + '.h5', 'w')
+    f = h5py.File(RECON_DIR + '/zsssl_slice_' + str(data_conf['slice_idx']).zfill(3) + '.h5', 'w')
     f.create_dataset('ZS', data=x_infer)
     f.close()

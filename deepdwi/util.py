@@ -10,8 +10,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from torch import Tensor
+import os
 
+from datetime import datetime
+from torch import Tensor
 from typing import Tuple
 
 
@@ -144,3 +146,27 @@ class C2R(nn.Module):
 
     def normal(self, input: torch.Tensor):
         return input
+
+
+def set_output_dir(base_dir, config_dict):
+
+    method_conf = config_dict['method']
+    data_conf = config_dict.get('data', {})
+    model_conf = config_dict.get('model', {})
+    optim_conf = config_dict.get('optim', {})
+    loss_conf = config_dict['loss']
+
+    data_str = data_conf['kdat'].rsplit('/', 1)[1]
+    data_str = data_str.rsplit('.h5', 1)[0]
+
+    now = datetime.now()
+    dir_name = now.strftime("%Y-%m-%d_")
+
+    dir_name += method_conf
+    dir_name += '_' + data_str
+    dir_name += '_net-' + model_conf['net']
+    dir_name += '_optim-' + optim_conf['method']
+    dir_name += '_lr-' + "{:.6f}".format(optim_conf['lr'])
+    dir_name += '_loss-' + loss_conf
+
+    return os.path.join(base_dir, dir_name)

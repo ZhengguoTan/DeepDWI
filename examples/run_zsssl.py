@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sigpy as sp
 import torch.nn as nn
+import torch.optim as optim
 
 from deepdwi import util
 from deepdwi.dims import *
@@ -114,7 +115,7 @@ def prep_data(data_file: str,
                                 yshift=yshift,
                                 device=device_sp)
 
-    _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=2)
+    _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=5)
 
     return coil2, kdat_prep, dwi_shot_phase, sms_phase, mask
 
@@ -324,9 +325,9 @@ if __name__ == "__main__":
         lossf = zsssl.NRMSELoss()
 
     if optim_conf['method'] == 'Adam':
-        optim = torch.optim.Adam(model.parameters(), lr=optim_conf['lr'])
+        optim = optim.Adam(model.parameters(), lr=optim_conf['lr'])
     else:
-        optim = torch.optim.SGD(model.parameters(), lr=optim_conf['lr'])
+        optim = optim.SGD(model.parameters(), lr=optim_conf['lr'])
 
     # %% train and valid
     checkpoint_name = 'zsssl_best.pth'
@@ -371,7 +372,7 @@ if __name__ == "__main__":
                 optim.step()
 
             epoch_x = torch.stack(epoch_x)
-            f = h5py.File(DIR + '/zsssl_epoch_' + str(epoch).zfill(3) + '.h5', 'w')
+            f = h5py.File(RECON_DIR + '/zsssl_epoch_' + str(epoch).zfill(3) + '.h5', 'w')
             f.create_dataset('DWI', data=epoch_x.detach().cpu().numpy())
             f.close()
 

@@ -224,8 +224,6 @@ class UnrollNet(nn.Module):
                                              N_residual_block=N_residual_block,
                                              features=self.features)
             print('> Use ResNet2D')
-        elif self.NN == 'Identity':
-            self.NN_Module = nn.Identity()
         elif self.NN == 'ResNetMAPLE':
             self.NN_Module = resnet.ResNetMAPLE(in_channels=self.T.oshape[1],
                                              N_residual_block=N_residual_block,

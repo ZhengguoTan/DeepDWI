@@ -28,7 +28,7 @@ def conv_layer(filter_size, padding='same', is_batch_norm=False, activation_type
                                    out_channels=out_c,
                                    kernel_size=kernel_size,
                                    padding=padding,bias=True),
-                         batch_norm(is_batch_norm,in_c),
+                         batch_norm(is_batch_norm,out_c),
                          activation_func(activation_type))
 
 def residual_block(filter_size):

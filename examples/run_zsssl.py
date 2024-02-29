@@ -432,8 +432,9 @@ if __name__ == "__main__":
         best_checkpoint = torch.load(os.path.join(RECON_DIR, checkpoint_name))
     else:
         best_checkpoint = torch.load(HOME_DIR + config_dict['checkpoint'])
-        best_epoch = best_checkpoint['epoch']
-        print('> loaded best checkpoint at the ' + str(best_epoch+1).zfill(3) + 'th epoch')
+
+    best_epoch = best_checkpoint['epoch']
+    print('> loaded best checkpoint at the ' + str(best_epoch+1).zfill(3) + 'th epoch')
 
     model.load_state_dict(best_checkpoint["model_state"])
 

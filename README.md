@@ -52,4 +52,5 @@ In the world of [PyTorch](https://pytorch.org/), deep learning reconstruction fo
 ## TODO:
 
 * add VAE examples
+* add transformer and diffusion models
 * use sphinx to create documentation

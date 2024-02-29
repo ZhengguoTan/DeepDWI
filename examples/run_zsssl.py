@@ -215,7 +215,8 @@ if __name__ == "__main__":
     print('    requires_grad_lamda: ', model_conf['requires_grad_lamda'])
     print('    N_unroll: ', model_conf['N_unroll'])
     print('    features: ', model_conf['features'])
-    print('    contrasts_in_channels', model_conf['contrasts_in_channels'])
+    print('    contrasts_in_channels: ', model_conf['contrasts_in_channels'])
+    print('    batch_norm: ', model_conf['batch_norm'])
 
     optim_conf = config_dict.get('optim', {})
     print('> optim_conf: ')
@@ -311,7 +312,8 @@ if __name__ == "__main__":
                             N_unroll=model_conf['N_unroll'],
                             features=model_conf['features'],
                             contrasts_in_channels=model_conf['contrasts_in_channels'],
-                            max_cg_iter=model_conf['max_cg_iter']).to(device)
+                            max_cg_iter=model_conf['max_cg_iter'],
+                            use_batch_norm=model_conf['batch_norm']).to(device)
 
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
     params = sum([np.prod(p.size()) for p in model_parameters])

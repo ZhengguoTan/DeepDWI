@@ -16,19 +16,19 @@ def activation_func(activation,is_inplace=False):
     return nn.ModuleDict([['ReLU',  nn.ReLU(inplace=is_inplace)],
                           ['None',  nn.Identity()]])[activation]
 
-def batch_norm(is_batch_norm,features):
-    if is_batch_norm:
+def batch_norm(use_batch_norm, features):
+    if use_batch_norm:
         return nn.BatchNorm2d(features)
     else:
         return nn.Identity()
 
-def conv_layer(filter_size, padding='same', is_batch_norm=False, activation_type='ReLU'):
+def conv_layer(filter_size, padding='same', use_batch_norm=False, activation_type='ReLU'):
     kernel_size, in_c, out_c = filter_size
     return nn.Sequential(nn.Conv2d(in_channels=in_c,
                                    out_channels=out_c,
                                    kernel_size=kernel_size,
-                                   padding=padding,bias=True),
-                         batch_norm(is_batch_norm,out_c),
+                                   padding=padding, bias=True),
+                         batch_norm(use_batch_norm, out_c),
                          activation_func(activation_type))
 
 def residual_block(filter_size):
@@ -53,7 +53,8 @@ class ResidualBlockModule(nn.Module):
 class ResNet2D(nn.Module):
     def __init__(self, in_channels: int = 2,
                  N_residual_block: int = 5,
-                 features: int = 64):
+                 features: int = 64,
+                 use_batch_norm: bool = False):
 
         super().__init__()
         self.in_channels = in_channels
@@ -62,10 +63,19 @@ class ResNet2D(nn.Module):
         filter1 = [kernel_size, in_channels, features] #map input to size of feature maps
         filter2 = [kernel_size, features, features] #ResNet Blocks
         filter3 = [kernel_size, features, in_channels] #map output channels to input channels
-        self.layer1 = conv_layer(filter_size=filter1, activation_type='None')
+        self.layer1 = conv_layer(filter_size=filter1,
+                                 activation_type='None',
+                                 use_batch_norm=use_batch_norm)
+
         self.layer2 = ResidualBlockModule(filter_size=filter2, num_blocks=N_residual_block)
-        self.layer3 =  conv_layer(filter_size=filter2, activation_type='None')
-        self.layer4 = conv_layer(filter_size=filter3, activation_type='None')
+
+        self.layer3 =  conv_layer(filter_size=filter2,
+                                  activation_type='None',
+                                  use_batch_norm=use_batch_norm)
+
+        self.layer4 = conv_layer(filter_size=filter3,
+                                 activation_type='None',
+                                 use_batch_norm=use_batch_norm)
 
     def forward(self,input_x):
         l1_out = self.layer1(input_x)

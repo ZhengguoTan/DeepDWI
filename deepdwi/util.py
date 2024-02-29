@@ -164,9 +164,12 @@ def set_output_dir(base_dir, config_dict):
 
     dir_name += method_conf
     dir_name += '_' + data_str
-    dir_name += '_net-' + model_conf['net']
-    dir_name += '_optim-' + optim_conf['method']
+    dir_name += '_' + model_conf['net']
+    dir_name += '_ResBlock-' + "{:2d}".format(model_conf['N_residual_block'])
+    if model_conf['batch_norm'] is True:
+        dir_name += '_BatchNorm'
+    dir_name += '_' + optim_conf['method']
     dir_name += '_lr-' + "{:.6f}".format(optim_conf['lr'])
-    dir_name += '_loss-' + loss_conf
+    dir_name += '_' + loss_conf
 
     return os.path.join(base_dir, dir_name)

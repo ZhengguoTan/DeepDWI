@@ -198,7 +198,8 @@ class UnrollNet(nn.Module):
                  NN: str = 'Identity',
                  features: int = 64,
                  max_cg_iter: int = 10,
-                 contrasts_in_channels: bool = False):
+                 contrasts_in_channels: bool = False,
+                 use_batch_norm: bool = False):
         super(UnrollNet, self).__init__()
 
         if NN == 'ResNet3D':
@@ -222,12 +223,13 @@ class UnrollNet(nn.Module):
         elif self.NN == 'ResNet2D':
             self.NN_Module = resnet.ResNet2D(in_channels=self.T.oshape[1],
                                              N_residual_block=N_residual_block,
-                                             features=self.features)
+                                             features=self.features,
+                                             use_batch_norm=use_batch_norm)
             print('> Use ResNet2D')
         elif self.NN == 'ResNetMAPLE':
             self.NN_Module = resnet.ResNetMAPLE(in_channels=self.T.oshape[1],
-                                             N_residual_block=N_residual_block,
-                                             features=self.features)
+                                                N_residual_block=N_residual_block,
+                                                features=self.features)
             print('> Use ResNetMAPLE')
 
         self.lamda = nn.Parameter(torch.tensor([lamda]), requires_grad=requires_grad_lamda)

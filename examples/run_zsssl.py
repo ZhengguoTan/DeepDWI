@@ -222,6 +222,8 @@ if __name__ == "__main__":
     print('> optim_conf: ')
     print('    method: ', optim_conf['method'])
     print('    lr: ', optim_conf['lr'])
+    print('    step_size: ', optim_conf['step_size'])
+    print('    gamma: ', optim_conf['gamma'])
 
     loss_conf = config_dict['loss']
     print('> loss: ', loss_conf)
@@ -327,9 +329,14 @@ if __name__ == "__main__":
         lossf = zsssl.NRMSELoss()
 
     if optim_conf['method'] == 'Adam':
-        optim = optim.Adam(model.parameters(), lr=optim_conf['lr'])
+        optimizer = optim.Adam(model.parameters(), lr=optim_conf['lr'])
     else:
-        optim = optim.SGD(model.parameters(), lr=optim_conf['lr'])
+        optimizer = optim.SGD(model.parameters(), lr=optim_conf['lr'])
+
+    scheduler = optim.lr_scheduler.StepLR(optimizer,
+                                          step_size=optim_conf['step_size'],
+                                          gamma=optim_conf['gamma'])
+
 
     # %% train and valid
     checkpoint_name = 'zsssl_best.pth'
@@ -369,9 +376,11 @@ if __name__ == "__main__":
                 train_loss_sum += train_loss
 
                 # back propagation
-                optim.zero_grad()
+                optimizer.zero_grad()
                 train_loss.backward()
-                optim.step()
+                optimizer.step()
+
+            scheduler.step()
 
             epoch_x = torch.stack(epoch_x)
             f = h5py.File(RECON_DIR + '/zsssl_epoch_' + str(epoch).zfill(3) + '.h5', 'w')
@@ -403,7 +412,7 @@ if __name__ == "__main__":
                 "epoch": epoch,
                 "valid_loss_min": valid_loss,
                 "model_state": model.state_dict(),
-                "optim_state": optim.state_dict()
+                "optim_state": optimizer.state_dict()
             }
 
             if valid_loss <= valid_loss_min:

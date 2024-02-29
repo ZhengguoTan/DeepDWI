@@ -24,6 +24,8 @@ model:
 optim:
   method: Adam
   lr: 0.0005
+  step_size: 30
+  gamma: 0.1
 
 loss: MixL1L2Loss
 

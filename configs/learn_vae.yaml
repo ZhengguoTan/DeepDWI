@@ -1,0 +1,21 @@
+dvs: /data/1.0mm_21-dir_R1x3_dvs.h5
+
+epochs: 100                     # number of epochs to train
+loss_function: Huber            # loss function to be used
+optimizer: Adam                 # optimizer to be used
+model: VAE                      # architecture to be used
+device: cuda                    # The device the training is done on
+latent: 6                       # latent size of the AE model
+noise_range: 25                 # number of noise distributions
+learning_rate: 0.0004           # learning rate for the training
+D_loss_weight: 0                # weight of the D-loss training !!not implemented yet!!
+batch_size_train: 3000          # batch_size for training
+batch_size_test: 1              # batch_size for testing
+test_epoch_step: 5              # every how many epochs shall be tested?
+
+# below is only relevant for the VAE model
+
+kld_start_epoch: 2              # starting epoch at which the kld loss is used
+kld_restart: False              # bool if the kld should be restartet
+kld_weight_increase: 0.0001     # increase of the weight of the kld_loss
+kld_max_weight: 0.0015          # maximum weight of the kld_loss

@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 
 from deepdwi import lsqr, util
-from deepdwi.models import mri, resnet
+from deepdwi.models import mri, resnet, unet
 
 from typing import Callable, List, Optional, Tuple, Union
 
@@ -196,6 +196,7 @@ class UnrollNet(nn.Module):
                  N_residual_block: int = 5,
                  N_unroll: int = 10,
                  NN: str = 'Identity',
+                 kernel_size: int = 3,
                  features: int = 64,
                  max_cg_iter: int = 10,
                  contrasts_in_channels: bool = False,
@@ -213,6 +214,7 @@ class UnrollNet(nn.Module):
 
         # neural network part
         self.NN = NN
+        self.kernel_size = kernel_size
         self.features = features
 
         if self.NN == 'ResNet3D':
@@ -223,6 +225,7 @@ class UnrollNet(nn.Module):
         elif self.NN == 'ResNet2D':
             self.NN_Module = resnet.ResNet2D(in_channels=self.T.oshape[1],
                                              N_residual_block=N_residual_block,
+                                             kernel_size=self.kernel_size,
                                              features=self.features,
                                              use_batch_norm=use_batch_norm)
             print('> Use ResNet2D')
@@ -231,6 +234,11 @@ class UnrollNet(nn.Module):
                                                 N_residual_block=N_residual_block,
                                                 features=self.features)
             print('> Use ResNetMAPLE')
+        elif self.NN == 'UNet':
+            self.NN_Module = unet.Unet(in_channels=self.T.oshape[1],
+                                       out_channels=self.T.oshape[1],
+                                       chans=self.features)
+            print('> use UNet')
 
         self.lamda = nn.Parameter(torch.tensor([lamda]), requires_grad=requires_grad_lamda)
         self.N_unroll = N_unroll

@@ -8,15 +8,13 @@ import yaml
 
 import matplotlib.pyplot as plt
 import numpy as np
-import sigpy as sp
 import torch.nn as nn
 import torch.optim as optim
 
-from deepdwi import util
+from deepdwi import util, prep
 from deepdwi.dims import *
 from deepdwi.models import mri
 from deepdwi.recons import zsssl
-from sigpy.mri import app, muse, retro, sms
 from torch.utils.data import DataLoader
 
 DIR = os.path.dirname(os.path.realpath(__file__))
@@ -24,101 +22,12 @@ DIR = os.path.dirname(os.path.realpath(__file__))
 HOME_DIR = DIR.rsplit('/', 1)[0]
 print('> HOME: ', HOME_DIR)
 
-DAT_DIR = DIR.rsplit('/', 1)[0] + '/data'
-print('> data directory: ', DAT_DIR)
+DATA_DIR = DIR.rsplit('/', 1)[0] + '/data'
+print('> data directory: ', DATA_DIR)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-device_sp = sp.Device(0 if torch.cuda.is_available() else -1)
 
 # torch.manual_seed(0)
-
-
-# %%
-def prep_data(data_file: str,
-              coil_file: str,
-              slice_idx: int = 0,
-              norm_kdat: bool = False):
-
-    f = h5py.File(HOME_DIR + data_file, 'r')
-    kdat = f['kdat'][:]
-    MB = f['MB'][()]
-    N_slices = f['Slices'][()]
-    N_segments = f['Segments'][()]
-    N_Accel_PE = f['Accel_PE'][()]
-    # slice_idx = f['slice_idx'][()]
-    f.close()
-
-    kdat = np.squeeze(kdat)  # 4 dim
-    kdat = np.swapaxes(kdat, -2, -3)
-
-    # # split kdat into shots
-    N_diff = kdat.shape[-4]
-    kdat_prep = []
-    for d in range(N_diff):
-        k = retro.split_shots(kdat[d, ...], shots=N_segments)
-        kdat_prep.append(k)
-
-    kdat_prep = np.array(kdat_prep)
-    kdat_prep = kdat_prep[..., None, :, :]  # 6 dim
-
-    if norm_kdat:
-        kdat_prep = kdat_prep / np.max(np.abs(kdat_prep[:]))
-
-    N_diff, N_shot, N_coil, _, N_y, N_x = kdat_prep.shape
-
-    print(' > kdat shape: ', kdat_prep.shape)
-
-    # sampling mask
-    mask = app._estimate_weights(kdat_prep, None, None, coil_dim=-4)
-    mask = abs(mask).astype(float)
-
-    print(' > mask shape: ', mask.shape)
-
-    # coil
-    f = h5py.File(HOME_DIR + coil_file, 'r')
-    coil = f['coil'][:]
-    f.close()
-
-    print(' > coil shape: ', coil.shape)
-
-    N_coil, N_z, N_y, N_x = coil.shape
-
-    # %%
-    yshift = []
-    for b in range(MB):
-        yshift.append(b / N_Accel_PE)
-
-    sms_phase = sms.get_sms_phase_shift([MB, N_y, N_x], MB=MB, yshift=yshift)
-
-    # %%
-    slice_mb_idx = sms.map_acquire_to_ordered_slice_idx(slice_idx, N_slices, MB)
-
-    coil2 = coil[:, slice_mb_idx, :, :]
-    print('> coil2 shape: ', coil2.shape)
-
-    # %%
-    import torchvision.transforms as T
-
-    acs_shape = list([N_y // 4, N_x // 4])
-    ksp_acs = sp.resize(kdat_prep, oshape=list(kdat_prep.shape[:-2]) + acs_shape)
-
-    coils_tensor = sp.to_pytorch(coil2)
-    TR = T.Resize(acs_shape, antialias=True)
-    mps_acs_r = TR(coils_tensor[..., 0]).cpu().detach().numpy()
-    mps_acs_i = TR(coils_tensor[..., 1]).cpu().detach().numpy()
-    mps_acs = mps_acs_r + 1j * mps_acs_i
-
-    _, dwi_shot = muse.MuseRecon(ksp_acs, mps_acs,
-                                MB=MB,
-                                acs_shape=acs_shape,
-                                lamda=0.01, max_iter=30,
-                                yshift=yshift,
-                                device=device_sp)
-
-    _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=5)
-
-    return coil2, kdat_prep, dwi_shot_phase, sms_phase, mask
-
 
 # %%
 def prep_mask(mask: np.ndarray, N_repeats: int = 12,
@@ -180,14 +89,16 @@ def repeat_data(coil4: np.ndarray,
 if __name__ == "__main__":
 
     # %% argument parser
+    # you can display help messages using `python run_zsssl.py -h`
     parser = argparse.ArgumentParser(description='run zsssl.')
 
     parser.add_argument('--config', type=str,
                         default='/configs/zsssl.yaml',
                         help='yaml config file for zsssl')
 
-    parser.add_argument('--diff_idx', type=int, default=-1,
-                        help='reconstruct only one diffuion encoding')
+    parser.add_argument('--mode', type=str, default='train',
+                        choices=('train', 'test'),
+                        help="perform 'train' or 'test' of the zsssl model.")
 
     args = parser.parse_args()
 
@@ -206,7 +117,9 @@ if __name__ == "__main__":
     print('    valid_rho: ', data_conf['valid_rho'])
     print('    train_rho: ', data_conf['train_rho'])
     print('    repeats: ', data_conf['repeats'])
-    print('    data_size: ', data_conf['batch_size'])
+    print('    batch_size: ', data_conf['batch_size'])
+    print('    N_shot_retro: ', data_conf['N_shot_retro'])
+    print('    N_diff_retro: ', data_conf['N_diff_retro'])
 
     model_conf = config_dict.get('model', {})
     print('> model_conf: ')
@@ -214,6 +127,7 @@ if __name__ == "__main__":
     print('    N_residual_block: ', model_conf['N_residual_block'])
     print('    requires_grad_lamda: ', model_conf['requires_grad_lamda'])
     print('    N_unroll: ', model_conf['N_unroll'])
+    print('    kernel_size: ', model_conf['kernel_size'])
     print('    features: ', model_conf['features'])
     print('    contrasts_in_channels: ', model_conf['contrasts_in_channels'])
     print('    batch_norm: ', model_conf['batch_norm'])
@@ -233,20 +147,20 @@ if __name__ == "__main__":
     print('    epochs: ', learn_conf['epochs'])
     print('    valid_loss_tracker: ', learn_conf['valid_loss_tracker'])
 
-    mode_conf = config_dict['mode']
-    print('> mode: ', mode_conf)
+    test_conf = config_dict['test']
+    if args.mode == 'test':
+        print('> test_conf: ')
+        print('    checkpoint: ', test_conf['checkpoint'])
 
-    if mode_conf == 'test':
-        print('> checkpoint: ', config_dict['checkpoint'])
 
-    if mode_conf == 'train':
+    if args.mode == 'train':
         RECON_DIR = util.set_output_dir(DIR, config_dict)
 
         yaml_file = 'zsssl.yaml'
 
-    elif mode_conf == 'test':
+    elif args.mode == 'test':
 
-        relative_path = config_dict['checkpoint'].rsplit('/', 1)[0]
+        relative_path = test_conf['checkpoint'].rsplit('/', 1)[0]
         RECON_DIR = HOME_DIR + relative_path
 
         yaml_file = 'zsssl_slice_' + str(data_conf['slice_idx']).zfill(3) + '.yaml'
@@ -260,26 +174,29 @@ if __name__ == "__main__":
 
 
     # %%
-    coil4, kdat6, phase_shot, phase_slice, mask = prep_data(data_conf['kdat'], data_conf['coil'],
-                                                            slice_idx=data_conf['slice_idx'],
-                                                            norm_kdat=data_conf['normalize_kdat'])
+    coil4, kdat6, phase_shot, phase_slice, mask = \
+        prep.prep_dwi_data(data_file=data_conf['kdat'],
+                           coil_file=data_conf['coil'],
+                           slice_idx=data_conf['slice_idx'],
+                           norm_kdat=data_conf['normalize_kdat'],
+                           N_shot_retro=data_conf['N_shot_retro'],
+                           N_diff_retro=data_conf['N_diff_retro'])
 
-    mask, train_mask, lossf_mask, valid_mask = prep_mask(mask, N_repeats=data_conf['repeats'],
-                                                         valid_rho=data_conf['valid_rho'],
-                                                         train_rho=data_conf['train_rho'])
+    # f = h5py.File(RECON_DIR + '/test_retro.h5', 'w')
+    # f.create_dataset('kdat', data=kdat6)
+    # f.create_dataset('coil', data=coil4)
+    # f.create_dataset('phase_shot', data=phase_shot)
+    # f.create_dataset('mask', data=mask)
+    # f.close()
 
-    coil7, kdat7, phase_shot7, phase_slice7 = repeat_data(coil4, kdat6, phase_shot, phase_slice,
-                                                          N_repeats=data_conf['repeats'])
+    mask, train_mask, lossf_mask, valid_mask = \
+        prep_mask(mask, N_repeats=data_conf['repeats'],
+                  valid_rho=data_conf['valid_rho'],
+                  train_rho=data_conf['train_rho'])
 
-    # run only one DWI direction and the first 10 coils
-    if args.diff_idx >=0 and args.diff_idx < kdat7.shape[DIM_TIME]:
-        print('> recon only one diffusion encoding')
-        kdat7 = kdat7[:, [args.diff_idx], ...]
-        phase_shot7 = phase_shot7[:, [args.diff_idx], ...]
-        mask = mask[[args.diff_idx], ...]
-        train_mask = train_mask[:, [args.diff_idx], ...]
-        lossf_mask = lossf_mask[:, [args.diff_idx], ...]
-        valid_mask = valid_mask[:, [args.diff_idx], ...]
+    coil7, kdat7, phase_shot7, phase_slice7 = \
+        repeat_data(coil4, kdat6, phase_shot, phase_slice,
+                    N_repeats=data_conf['repeats'])
 
     print('>>> coil7 shape\t: ', coil7.shape, ' type: ', coil7.dtype)
     print('>>> kdat7 shape\t: ', kdat7.shape, ' type: ', kdat7.dtype)
@@ -308,10 +225,12 @@ if __name__ == "__main__":
     if model_conf['net'] == 'ResNet2D' and model_conf['contrasts_in_channels'] is False:
         assert kdat7.shape[DIM_TIME] == 1 and kdat7.shape[DIM_ECHO] == 1
 
-    model = zsssl.UnrollNet(ishape, lamda=model_conf['lamda'], NN=model_conf['net'],
+    model = zsssl.UnrollNet(ishape, lamda=model_conf['lamda'],
+                            NN=model_conf['net'],
                             requires_grad_lamda=model_conf['requires_grad_lamda'],
                             N_residual_block=model_conf['N_residual_block'],
                             N_unroll=model_conf['N_unroll'],
+                            kernel_size=model_conf['kernel_size'],
                             features=model_conf['features'],
                             contrasts_in_channels=model_conf['contrasts_in_channels'],
                             max_cg_iter=model_conf['max_cg_iter'],
@@ -340,7 +259,7 @@ if __name__ == "__main__":
 
     # %% train and valid
     checkpoint_name = 'zsssl_best.pth'
-    if mode_conf != 'test':
+    if args.mode == 'train':
         valid_loss_min = np.inf
 
         epoch, valid_loss_tracker = 0, 0
@@ -439,10 +358,10 @@ if __name__ == "__main__":
     infer_data = zsssl.Dataset(coil7[[0]], kdat7[[0]], mask[np.newaxis], mask[np.newaxis], phase_shot7[[0]], phase_slice7[[0]])
     infer_load = DataLoader(infer_data, batch_size=1)
 
-    if mode_conf != 'test':
+    if args.mode == 'train':
         best_checkpoint = torch.load(os.path.join(RECON_DIR, checkpoint_name))
     else:
-        best_checkpoint = torch.load(HOME_DIR + config_dict['checkpoint'])
+        best_checkpoint = torch.load(HOME_DIR + test_conf['checkpoint'])
 
     best_epoch = best_checkpoint['epoch']
     print('> loaded best checkpoint at the ' + str(best_epoch+1).zfill(3) + 'th epoch')
@@ -468,6 +387,10 @@ if __name__ == "__main__":
 
     x_infer = np.array(x_infer)
 
-    f = h5py.File(RECON_DIR + '/zsssl_slice_' + str(data_conf['slice_idx']).zfill(3) + '.h5', 'w')
+    recon_file = '/zsssl_slice_' + str(data_conf['slice_idx']).zfill(3)
+    if args.mode == 'test':
+        recon_file += '_test_shot-retro-' + str(data_conf['N_shot_retro'])
+
+    f = h5py.File(RECON_DIR + recon_file + '.h5', 'w')
     f.create_dataset('ZS', data=x_infer)
     f.close()

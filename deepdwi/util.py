@@ -164,10 +164,17 @@ def set_output_dir(base_dir, config_dict):
 
     dir_name += method_conf
     dir_name += '_' + data_str
+    if data_conf['N_shot_retro'] > 0:
+        dir_name += '_shot-retro-' + "{:1d}".format(data_conf['N_shot_retro'])
+    dir_name += '_norm-kdat-' + "{:3.1f}".format(data_conf['normalize_kdat'])
+
     dir_name += '_' + model_conf['net']
     dir_name += '_ResBlock-' + "{:2d}".format(model_conf['N_residual_block'])
     if model_conf['batch_norm'] is True:
         dir_name += '_BatchNorm'
+    dir_name += '_kernel-' + "{:1d}".format(model_conf['kernel_size'])
+    dir_name += '_lamda-' + "{:5.3f}".format(model_conf['lamda'])
+
     dir_name += '_' + optim_conf['method']
     dir_name += '_lr-' + "{:.6f}".format(optim_conf['lr'])
     dir_name += '_' + loss_conf

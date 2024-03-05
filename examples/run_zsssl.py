@@ -182,13 +182,6 @@ if __name__ == "__main__":
                            N_shot_retro=data_conf['N_shot_retro'],
                            N_diff_retro=data_conf['N_diff_retro'])
 
-    # f = h5py.File(RECON_DIR + '/test_retro.h5', 'w')
-    # f.create_dataset('kdat', data=kdat6)
-    # f.create_dataset('coil', data=coil4)
-    # f.create_dataset('phase_shot', data=phase_shot)
-    # f.create_dataset('mask', data=mask)
-    # f.close()
-
     mask, train_mask, lossf_mask, valid_mask = \
         prep_mask(mask, N_repeats=data_conf['repeats'],
                   valid_rho=data_conf['valid_rho'],

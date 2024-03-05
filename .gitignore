@@ -1,6 +1,9 @@
 # ignore *.h5 files
 *.h5
 
+# ignore slurm output files
+*.out
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

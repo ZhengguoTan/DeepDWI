@@ -167,6 +167,10 @@ def set_output_dir(base_dir, config_dict):
     if data_conf['N_shot_retro'] > 0:
         dir_name += '_shot-retro-' + "{:1d}".format(data_conf['N_shot_retro'])
     dir_name += '_norm-kdat-' + "{:3.1f}".format(data_conf['normalize_kdat'])
+    if data_conf['navi'] is not None:
+        dir_name += '_navi'
+    else:
+        dir_name += '_self'
 
     dir_name += '_' + model_conf['net']
     dir_name += '_ResBlock-' + "{:2d}".format(model_conf['N_residual_block'])

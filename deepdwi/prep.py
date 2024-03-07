@@ -4,8 +4,11 @@ import torch
 
 import numpy as np
 import sigpy as sp
+import torchvision.transforms as T
 
 from sigpy.mri import app, muse, retro, sms
+
+from typing import Optional
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -41,6 +44,7 @@ def retro_usamp_shot(input, N_shot_retro: int = 1, shift: bool = True):
 
 # %%
 def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
+                  navi_file: Optional[str] = None,
                   coil_file: str = '/data/1.0mm_21-dir_R1x3_coils.h5',
                   slice_idx: int = 0,
                   norm_kdat: float = 1.0,
@@ -48,6 +52,7 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
                   N_diff_retro: int = 0,
                   return_muse: bool = False):
 
+    # %%
     f = h5py.File(HOME_DIR + data_file, 'r')
     kdat = f['kdat'][:]
     MB = f['MB'][()]
@@ -86,33 +91,59 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
 
     print(' > kdat shape: ', kdat_prep.shape)
 
-    # coil
+
+    # %% navi
+    if navi_file is not None:
+        f = h5py.File(HOME_DIR + navi_file, 'r')
+        navi = f['navi'][:]
+        f.close()
+
+        navi = np.squeeze(navi)
+        navi = np.swapaxes(navi, -2, -3)
+        navi = np.swapaxes(navi, 0, 1)
+        navi_prep = navi[..., None, :, :]  # 6 dim
+
+    else:
+        navi_prep = None
+
+    # %% coil
     f = h5py.File(HOME_DIR + coil_file, 'r')
     coil = f['coil'][:]
     f.close()
 
     print(' > coil shape: ', coil.shape)
-
     N_coil, N_z, N_y, N_x = coil.shape
 
-    # # sms phase
+    # # MB coils
+    slice_mb_idx = sms.map_acquire_to_ordered_slice_idx(slice_idx, N_slices, MB)
+
+    coil2 = coil[:, slice_mb_idx, :, :]
+    print('> coil2 shape: ', coil2.shape)
+
+    # %% sms phase
     yshift = []
     for b in range(MB):
         yshift.append(b / N_Accel_PE)
 
     sms_phase = sms.get_sms_phase_shift([MB, N_y, N_x], MB=MB, yshift=yshift)
 
-    # # coils
-    slice_mb_idx = sms.map_acquire_to_ordered_slice_idx(slice_idx, N_slices, MB)
+    # %% shot phase
+    if navi_prep is None:
 
-    coil2 = coil[:, slice_mb_idx, :, :]
-    print('> coil2 shape: ', coil2.shape)
+        acs_shape = list([N_y // 4, N_x // 4])
+        ksp_acs = sp.resize(kdat_prep,
+                            oshape=list(kdat_prep.shape[:-2]) +\
+                                acs_shape)
 
-    # # shot phase
-    import torchvision.transforms as T
+    else:
 
-    acs_shape = list([N_y // 4, N_x // 4])
-    ksp_acs = sp.resize(kdat_prep, oshape=list(kdat_prep.shape[:-2]) + acs_shape)
+        N_navi_y, N_navi_x = navi_prep.shape[-2:]
+        acs_shape = [N_navi_y, N_navi_x * 2]
+
+        ksp_acs = sp.resize(navi_prep,
+                            oshape=list(navi_prep.shape[:-2]) +\
+                                acs_shape)
+
 
     coils_tensor = sp.to_pytorch(coil2)
     TR = T.Resize(acs_shape, antialias=True)
@@ -121,15 +152,19 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
     mps_acs = mps_acs_r + 1j * mps_acs_i
 
     _, dwi_shot = muse.MuseRecon(ksp_acs, mps_acs,
-                                 MB=MB,
-                                 acs_shape=acs_shape,
-                                 lamda=0.01, max_iter=30,
-                                 yshift=yshift,
-                                 device=device_sp)
+                                MB=MB,
+                                acs_shape=acs_shape,
+                                lamda=0.01, max_iter=30,
+                                yshift=yshift,
+                                device=device_sp)
+
 
     _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=5)
 
-    # # sampling mask
+    if navi_prep is not None:
+        dwi_shot_phase = np.conj(dwi_shot_phase)
+
+    # %% sampling mask
     mask = app._estimate_weights(kdat_prep, None, None, coil_dim=-4)
     mask = abs(mask).astype(float)
 

@@ -19,8 +19,7 @@ def get_relative_error(reco_sig, orig_sig):
 def learn_linear_subspace(sig: Tensor,
                           num_coeffs: int = 5,
                           error_bound: float = 1E-5,
-                          use_error_bound: bool = False,
-                          device: str = 'cpu'):
+                          use_error_bound: bool = False):
     """learn a linear subspace matrix from signal dictionary via singular value decomposition (SVD).
 
     Args:
@@ -49,15 +48,7 @@ def learn_linear_subspace(sig: Tensor,
         Zhengguo Tan <zhengguo.tan@gmail.com>
     """
     # device
-    if device == 'cuda':
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print('>>> use GPU')
-    else:
-        print('>>> use CPU')
-
-    return_device = sig.get_device()
-    if (sig.get_device() == -1) and (device == torch.device('cuda')):
-        sig = sig.to(device)
+    print('> device: ', sig.device)
 
     # contrast stored in 0th dim of sig
     sig2 = sig.view(sig.shape[0], -1)
@@ -81,7 +72,4 @@ def learn_linear_subspace(sig: Tensor,
             print('Eventual number of subspace coefficients: ', num_coeffs)
             print('Eventual relative error: ', err)
 
-            if return_device == -1:
-                return U_sub.cpu()
-            else:
-                return U_sub
+            return U_sub

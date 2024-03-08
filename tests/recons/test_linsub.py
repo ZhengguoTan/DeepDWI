@@ -30,8 +30,7 @@ class testLinsub(unittest.TestCase):
 
             N_te, N_atom = y1.shape
 
-            Ut = linsub.learn_linear_subspace(y1, num_coeffs=10,
-                                              device=device)
+            Ut = linsub.learn_linear_subspace(y1, num_coeffs=10)
 
             y2 = Ut @ Ut.T @ y1.view(N_te, -1)
 

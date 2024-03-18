@@ -12,11 +12,30 @@ In the world of [PyTorch](https://pytorch.org/), deep learning reconstruction fo
 
 ## Installation
 
-* please follow the instructions to install cupy: https://docs.cupy.dev/en/stable/install.html
+DeepDWI requires Python version >= 3.10.13.
+
+* please follow the instructions to install `cupy`: https://docs.cupy.dev/en/stable/install.html
+
+
+### Via `conda`
+
+
+### Via `pip`
+
+
+### Installation for Developers
 
 
 ## Features
 
+
+## Data
+
+| Spatial Resolution (mm3) | Diffusion Mode | Acceleration (in-plane x slice) | Shots | Navigator | Link |
+|---|---|---|---|---|---|
+| 0.7 x 0.7 x 0.7 | MDDW 20 directions with b-value of 1000 s/mm2 | 2 x 2 | 3 | Yes | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10781347.svg)](https://doi.org/10.5281/zenodo.10781347) |
+| 1.0 x 1.0 x 1.0 | MDDW 20 directions with b-value of 1000 s/mm2 | 1 x 3 | 4 | No  | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10668487.svg)](https://doi.org/10.5281/zenodo.10668487) |
+| 1.0 x 1.0 x 1.0 | 3-shell 126 directions with b-value up to 3000 s/mm2 | 3 x 3 | 2 | No  |  |
 
 ## References
 

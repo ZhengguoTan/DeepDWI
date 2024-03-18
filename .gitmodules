@@ -1,0 +1,6 @@
+[submodule "figures/models/plot_sms_diff_model"]
+	path = figures/models/plot_sms_diff_model
+	url = https://github.com/ZhengguoTan/plot_sms_diff_model.git
+[submodule "figures/models/plot_nn"]
+	path = figures/models/plot_nn
+	url = https://github.com/ZhengguoTan/plot_nn.git

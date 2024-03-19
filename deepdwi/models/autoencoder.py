@@ -5,6 +5,7 @@ References:
 
 
 Author:
+    Julius Glaser <julius.glaser@fau.de>
     Soundarya Soundarresan <soundarya.soundarresan@fau.de>
     Zhengguo Tan <zhengguo.tan@gmail.com>
 """
@@ -159,6 +160,7 @@ def loss_function_kld( mu=None, logvar=None):
     Reference:
         * Kingma DP, Welling M.
           Auto-encoding Variational Bayes. ICLR (2014).
+
     Split up KLD and reconstruction loss
     Assume pdfs to be Gaussian to use analytical formula
     """
@@ -169,8 +171,8 @@ def loss_function_kld( mu=None, logvar=None):
     if logvar is None:
         logvar = torch.tensor([0])
 
-    std = torch.exp(0.5 * logvar)
+    # std = torch.exp(0.5 * logvar)
 
-    KLD = -0.5 * torch.mean(1 + std.log() - mu.pow(2) - std)
+    KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
 
     return KLD

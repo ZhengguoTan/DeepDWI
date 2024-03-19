@@ -140,11 +140,11 @@ class TestZSSSL(unittest.TestCase):
             ptt.assert_close(fwd_dd, fwd_jm)
             ptt.assert_close(adj_dd, adj_jm)
 
-    def test_unrollnet(self):
+    def test_algunroll(self):
 
         ishape = [1, 18, 1, 1, 1, 192, 224]
 
-        model = zsssl.UnrollNet(ishape, lamda=0.05, NN='ResNet2D',
+        model = zsssl.AlgUnroll(ishape, lamda=0.05, NN='ResNet2D',
                                 requires_grad_lamda=True,
                                 N_residual_block=12,
                                 N_unroll=8,

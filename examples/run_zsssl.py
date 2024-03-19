@@ -111,6 +111,7 @@ if __name__ == "__main__":
     data_conf = config_dict.get('data', {})
     print('> data_conf: ')
     print('    kdat: ', data_conf['kdat'])
+    print('    navi: ', data_conf['navi'])
     print('    slice_idx: ', data_conf['slice_idx'])
     print('    coil: ', data_conf['coil'])
     print('    normalize_kdat: ', data_conf['normalize_kdat'])
@@ -176,6 +177,7 @@ if __name__ == "__main__":
     # %%
     coil4, kdat6, phase_shot, phase_slice, mask = \
         prep.prep_dwi_data(data_file=data_conf['kdat'],
+                           navi_file=data_conf['navi'],
                            coil_file=data_conf['coil'],
                            slice_idx=data_conf['slice_idx'],
                            norm_kdat=data_conf['normalize_kdat'],
@@ -203,7 +205,7 @@ if __name__ == "__main__":
     S = mri.Sense(coil7[0], kdat7[0], phase_slice=phase_slice7[0],
                   phase_echo=phase_shot7[0], combine_echo=True)
     ishape = [data_conf['batch_size']] + list(S.ishape)
-    print('>>> ishape to UnrollNet: ', ishape)
+    print('>>> ishape to AlgUnroll: ', ishape)
     del S
 
     # %% train and valid
@@ -218,7 +220,7 @@ if __name__ == "__main__":
     if model_conf['net'] == 'ResNet2D' and model_conf['contrasts_in_channels'] is False:
         assert kdat7.shape[DIM_TIME] == 1 and kdat7.shape[DIM_ECHO] == 1
 
-    model = zsssl.UnrollNet(ishape, lamda=model_conf['lamda'],
+    model = zsssl.AlgUnroll(ishape, lamda=model_conf['lamda'],
                             NN=model_conf['net'],
                             requires_grad_lamda=model_conf['requires_grad_lamda'],
                             N_residual_block=model_conf['N_residual_block'],

@@ -234,7 +234,7 @@ if __name__ == "__main__":
 
     S = mri.Sense(coil7[[0]], mask * kdat7[[0]])
     ishape = [data_conf['batch_size']] + list(S.ishape[-6:])
-    print('>>> ishape to UnrollNet: ', ishape)
+    print('>>> ishape to AlgUnroll: ', ishape)
     del S
 
     # %% train and valid
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     if model_conf['net'] == 'ResNet2D' and model_conf['contrasts_in_channels'] is False:
         assert kdat7.shape[DIM_TIME] == 1 and kdat7.shape[DIM_ECHO] == 1
 
-    model = zsssl.UnrollNet(ishape, lamda=model_conf['lamda'], NN=model_conf['net'],
+    model = zsssl.AlgUnroll(ishape, lamda=model_conf['lamda'], NN=model_conf['net'],
                             requires_grad_lamda=model_conf['requires_grad_lamda'],
                             N_residual_block=model_conf['N_residual_block'],
                             N_unroll=model_conf['N_unroll'],

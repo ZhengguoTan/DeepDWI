@@ -184,10 +184,15 @@ def conj_grad(AHA, AHy, max_iter: int = 6, tol: float = 0.):
     return x
 
 # %%
-class UnrollNet(nn.Module):
+class AlgUnroll(nn.Module):
     """
     Args:
         TODO: docomentation
+
+    References:
+        * Monga V, Li Y, Eldar Y.
+          Algorithm Unrolling: Interpretable, Efficient Deep Learning for Signal and Image Processing.
+          IEEE Signal Processing Magazine (2021). DOI: 10.1109/MSP.2020.3016905
     """
     def __init__(self,
                  ishape: Tuple[int, ...],
@@ -201,7 +206,7 @@ class UnrollNet(nn.Module):
                  max_cg_iter: int = 10,
                  contrasts_in_channels: bool = False,
                  use_batch_norm: bool = False):
-        super(UnrollNet, self).__init__()
+        super(AlgUnroll, self).__init__()
 
         if NN == 'ResNet3D':
             contrasts_in_channels = False
@@ -284,7 +289,6 @@ class UnrollNet(nn.Module):
             # CG = lsqr.ConjugateGradient(AHA, AHy, torch.zeros_like(AHy),
             #                             max_iter=self.max_cg_iter,
             #                             tol=0., verbose=False)
-
             # x = CG()
             x = conj_grad(AHA, AHy, max_iter=self.max_cg_iter)
 

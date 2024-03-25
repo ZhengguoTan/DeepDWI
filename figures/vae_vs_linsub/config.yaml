@@ -7,5 +7,6 @@ data:
   dvs: /data/1.0mm_21-dir_R1x3_dvs.h5
 
 model:
+  # checkpoint: /figures/vae_vs_linsub/train_VAE_Latent06final.pt
   checkpoint: /examples/2024-03-14_vae_1.0mm_21-dir_R1x3_latent-06/train_VAE_Latent06_final.pt
   N_latent: 6

@@ -29,7 +29,7 @@ DWI_LINSUB_1 = DWI_LINSUB[:, 1, :, :]
 
 row, col = 2, 3
 
-diff_idx = [16]
+diff_idx = [19]
 
 
 for d in diff_idx:

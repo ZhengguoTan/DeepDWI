@@ -286,10 +286,6 @@ class AlgUnroll(nn.Module):
             AHA = lambda x: SenseT.adjoint(SenseT(x)) + self.lamda * x
             AHy = SenseT.adjoint(SenseT.y) + self.lamda * x
 
-            # CG = lsqr.ConjugateGradient(AHA, AHy, torch.zeros_like(AHy),
-            #                             max_iter=self.max_cg_iter,
-            #                             tol=0., verbose=False)
-            # x = CG()
             x = conj_grad(AHA, AHy, max_iter=self.max_cg_iter)
 
         lossf_kspace = SenseL(x)

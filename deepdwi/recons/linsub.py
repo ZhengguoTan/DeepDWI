@@ -9,6 +9,7 @@ import torch
 
 from torch import Tensor
 from torch.linalg import norm, svd
+# from torch.nn import functional as F
 
 
 def get_relative_error(reco_sig, orig_sig):
@@ -64,6 +65,7 @@ def learn_linear_subspace(sig: Tensor,
         reco_sig = U_sub @ U_sub.T @ sig2
 
         err = get_relative_error(reco_sig, sig2)
+        # err = F.mse_loss(reco_sig, sig2)
 
         if (err > error_bound) and use_error_bound:
             num_coeffs += 1

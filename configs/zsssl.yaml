@@ -11,8 +11,14 @@ data:
   # coil: /data/1.0mm_126-dir_R3x3_coils.h5
   # # #
   kdat: /data/0.7mm_21-dir_R2x2_kdat_slice_000.h5
+  navi: null  # /data/0.7mm_21-dir_R2x2_navi_slice_000.h5
   slice_idx: 0
   coil: /data/0.7mm_21-dir_R2x2_coils.h5
+  # # #
+  # kdat: /data/0.5x0.5x2.0mm_R3x2_kdat_slice_000_pat.h5
+  # navi: /data/0.5x0.5x2.0mm_R3x2_navi_slice_000_pat.h5
+  # slice_idx: 0
+  # coil: /data/0.5x0.5x2.0mm_R3x2_coil_pat.h5
   normalize_kdat: 1.0  # important
   valid_rho: 0.2
   train_rho: 0.4
@@ -24,6 +30,8 @@ data:
 model:
   net: ResNet2D
   N_residual_block: 12
+  unrolled_algorithm: ADMM  # ADMM, MoDL, VarNet
+  ADMM_rho: 0.05
   N_unroll: 8
   kernel_size: 3
   features: 128

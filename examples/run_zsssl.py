@@ -126,11 +126,13 @@ if __name__ == "__main__":
     print('> model_conf: ')
     print('    net: ', model_conf['net'])
     print('    N_residual_block: ', model_conf['N_residual_block'])
-    print('    requires_grad_lamda: ', model_conf['requires_grad_lamda'])
+    print('    unrolled_algorithm: ', model_conf['unrolled_algorithm'])
+    print('    ADMM_rho: ', model_conf['ADMM_rho'])
     print('    N_unroll: ', model_conf['N_unroll'])
     print('    kernel_size: ', model_conf['kernel_size'])
     print('    features: ', model_conf['features'])
     print('    contrasts_in_channels: ', model_conf['contrasts_in_channels'])
+    print('    requires_grad_lamda: ', model_conf['requires_grad_lamda'])
     print('    batch_norm: ', model_conf['batch_norm'])
 
     optim_conf = config_dict.get('optim', {})
@@ -224,6 +226,8 @@ if __name__ == "__main__":
                             NN=model_conf['net'],
                             requires_grad_lamda=model_conf['requires_grad_lamda'],
                             N_residual_block=model_conf['N_residual_block'],
+                            unrolled_algorithm=model_conf['unrolled_algorithm'],
+                            ADMM_rho=model_conf['ADMM_rho'],
                             N_unroll=model_conf['N_unroll'],
                             kernel_size=model_conf['kernel_size'],
                             features=model_conf['features'],

@@ -199,6 +199,8 @@ class AlgUnroll(nn.Module):
                  lamda: float = 0.01,
                  requires_grad_lamda: bool = True,
                  N_residual_block: int = 5,
+                 unrolled_algorithm: str = 'MoDL',
+                 ADMM_rho: float = 0.05,
                  N_unroll: int = 10,
                  NN: str = 'Identity',
                  kernel_size: int = 3,
@@ -245,7 +247,12 @@ class AlgUnroll(nn.Module):
                                        chans=self.features)
             print('> use UNet')
 
-        self.lamda = nn.Parameter(torch.tensor([lamda]), requires_grad=requires_grad_lamda)
+        # algorithm
+        self.unrolled_algorithm = unrolled_algorithm
+        self.ADMM_rho = nn.Parameter(torch.tensor([ADMM_rho]),
+                                     requires_grad=False)
+        self.lamda = nn.Parameter(torch.tensor([lamda]),
+                                  requires_grad=requires_grad_lamda)
         self.N_unroll = N_unroll
 
         self.max_cg_iter = max_cg_iter
@@ -272,25 +279,82 @@ class AlgUnroll(nn.Module):
                            phase_slice=phase_slice)
 
         x = SenseT.adjoint(SenseT.y)  # x0: AHy
+        v = x.clone()
+        u = torch.zeros_like(x)
 
         refer_kspace = lossf_mask * kspace
         SenseL = mri.Sense(sens, refer_kspace,
                            phase_echo=phase_echo, combine_echo=True,
                            phase_slice=phase_slice)
 
+        # if self.unrolled_algorithm == 'VarNet':
+        #     self.max_eig = self.get_max_eig(SenseT)
+        self.max_eig = 1.
+
         for n in range(self.N_unroll):
-            x = self.T(x)
-            x = x.float()
-            x = self.T.adjoint(self.NN_Module(x))
 
-            AHA = lambda x: SenseT.adjoint(SenseT(x)) + self.lamda * x
-            AHy = SenseT.adjoint(SenseT.y) + self.lamda * x
+            if self.unrolled_algorithm == 'VarNet':
+                # gradient descent
+                u = u - (self.lamda / self.max_eig) * SenseT.adjoint(SenseT(u) - SenseT.y)
 
-            x = conj_grad(AHA, AHy, max_iter=self.max_cg_iter)
+                # NN
+                z = self.T(u)
+                z = z.float()
+                z = self.T.adjoint(self.NN_Module(z))
+                u = u - z
+
+                x = u.clone()
+
+            elif self.unrolled_algorithm == 'MoDL':
+
+                x = self.T(x)
+                x = x.float()
+                x = self.T.adjoint(self.NN_Module(x))
+
+                AHA = lambda x: SenseT.adjoint(SenseT(x)) + self.lamda * x
+                AHy = SenseT.adjoint(SenseT.y) + self.lamda * x
+
+                x = conj_grad(AHA, AHy, max_iter=self.max_cg_iter)
+
+            elif self.unrolled_algorithm == 'ADMM':
+
+                AHA = lambda x: SenseT.adjoint(SenseT(x)) + self.ADMM_rho * x
+                AHy = SenseT.adjoint(SenseT.y) + self.ADMM_rho * (v - u)
+
+                # update x
+                x = conj_grad(AHA, AHy, max_iter=self.max_cg_iter)
+                # update v
+                v = x + u
+                v = self.T(v)
+                v = v.float()
+                v = self.T.adjoint((self.lamda/self.ADMM_rho) * self.NN_Module(v))
+                # update u
+                u = u + x - v
 
         lossf_kspace = SenseL(x)
 
         return x, self.lamda, lossf_kspace, refer_kspace
+
+    def get_max_eig(self, SenseOp):
+        r""" compute maximal eigenvalue
+
+        References:
+            * Beck A, Teboulle M.
+              A Fast Iterative Shrinkage-Thresholding Algorithm for Linear Inverse Problems.
+              SIAM J Imaging Sci (2009). DOI: https://doi.org/10.1137/080716542
+            * Tan Z, Hohage T, Kalentev O, Joseph AA, Wang X, Voit D, Merboldt KD, Frahm J.
+              An eigenvalue approach for the automatic scaling of unknowns in model-based reconstructions: Application to real-time phase-contrast flow MRI.
+              NMR Biomed (2017). DOI: https://doi.org/10.1002/nbm.3835
+        """
+        x = torch.randn(size=SenseOp.ishape, dtype=SenseOp.y.dtype, device=SenseOp.y.device)
+        for _ in range(30):
+            y = SenseOp.adjoint(SenseOp(x))
+            max_eig = torch.linalg.norm(y).ravel()
+            x = y / max_eig
+
+            print('%12.6f'%(max_eig))
+
+        return max_eig
 
 # %%
 class MixL1L2Loss(nn.Module):

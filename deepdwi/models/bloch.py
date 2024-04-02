@@ -8,6 +8,7 @@ Author:
 """
 
 import numpy as np
+import torch.utils.data as data
 
 
 def get_B(b, g):
@@ -112,3 +113,54 @@ def model_t2(TE,
         sig[:, T2_ind] = np.exp(z * TE)
 
     return sig
+
+
+# %%
+class DwiDataset(data.Dataset):
+
+    def __init__(self, x_noisy, x_clean, noise_amount, transform=None):
+
+        self.x_noisy = x_noisy
+        self.x_clean = x_clean
+        self.noise_amount = noise_amount
+
+        print('> DwiDataset x_noisy shape: ', x_noisy.shape)
+
+        self.N_atom = x_clean.shape[0]
+        self.N_diff = x_clean.shape[1]
+
+
+        # transforms.ToTensor() scales images!!!
+        # if transform is None:
+        #     transform = transforms.Compose([transforms.ToTensor()])
+
+        self.transform = transform
+
+    def __len__(self):
+
+        assert (len(self.x_noisy) == len(self.x_clean))
+        return len(self.x_noisy)
+
+    def __getitem__(self, idx):
+
+        x_noisy = self.x_noisy[idx]
+        x_clean = self.x_clean[idx]
+        noise_amount = self.noise_amount[idx]
+
+        if self.transform is not None:
+            x_noisy = self.transform(x_noisy)
+            x_clean = self.transform(x_clean)
+
+        return (x_noisy, x_clean, noise_amount)
+
+# %%
+def add_noise(x_clean, scale):
+
+    x_noisy = x_clean + np.random.normal(loc = 0,
+                                         scale = scale,
+                                         size=x_clean.shape)
+
+    x_noisy[x_noisy < 0.] = 0.
+    x_noisy[x_noisy > 1.] = 1.
+
+    return x_noisy

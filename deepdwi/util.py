@@ -178,6 +178,7 @@ def set_output_dir(base_dir, config_dict):
         dir_name += '_BatchNorm'
     dir_name += '_kernel-' + "{:1d}".format(model_conf['kernel_size'])
     dir_name += '_' + model_conf['unrolled_algorithm']
+    dir_name += '_' + str(model_conf['N_unroll']).zfill(2)
     dir_name += '_lamda-' + "{:5.3f}".format(model_conf['lamda'])
 
     dir_name += '_' + optim_conf['method']

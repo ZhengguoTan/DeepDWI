@@ -287,9 +287,8 @@ class AlgUnroll(nn.Module):
                            phase_echo=phase_echo, combine_echo=True,
                            phase_slice=phase_slice)
 
-        # if self.unrolled_algorithm == 'VarNet':
-        #     self.max_eig = self.get_max_eig(SenseT)
-        self.max_eig = 1.
+        if self.unrolled_algorithm == 'VarNet':
+            self.max_eig = self.get_max_eig(SenseT)
 
         for n in range(self.N_unroll):
 

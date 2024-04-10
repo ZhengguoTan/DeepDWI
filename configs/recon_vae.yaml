@@ -8,4 +8,5 @@ data:
   normalize_kdat: False
 
 test:
-  checkpoint: /examples/2024-03-02_1.0mm_21-dir_R1x3_VAE_latent-07/train_VAE_Latent07final.pt
+  checkpoint: /examples/2024-03-14_vae_1.0mm_21-dir_R1x3_latent-06/train_VAE_Latent06_final.pt
+  N_latent: 6

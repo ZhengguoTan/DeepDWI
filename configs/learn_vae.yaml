@@ -1,6 +1,6 @@
 dvs: /data/1.0mm_21-dir_R1x3_dvs.h5
 
-epochs: 100                     # number of epochs to train
+epochs: 50                      # number of epochs to train
 loss_function: Huber            # loss function to be used
 optimizer: Adam                 # optimizer to be used
 model: VAE                      # architecture to be used

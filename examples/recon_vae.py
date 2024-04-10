@@ -80,7 +80,8 @@ if __name__ == "__main__":
                            return_muse=True)
 
     # %%
-    model = ae.VAE(input_features=21, latent_features=7)
+    N_latent = test_conf['N_latent']
+    model = ae.VAE(input_features=21, latent_features=N_latent)
     model.load_state_dict(torch.load(HOME_DIR + test_conf['checkpoint']))
     model.to(device)
 
@@ -91,11 +92,12 @@ if __name__ == "__main__":
     sms_phase_tensor = torch.from_numpy(phase_slice).to(device).type(torch.complex64)
 
     S = mri.Sense(coil_tensor, kdat_tensor,
-                phase_echo=shot_phase_tensor,
-                combine_echo=True,
-                phase_slice=sms_phase_tensor,
-                basis=model,
-                baseline=torch.from_numpy(DWI_MUSE[[0]]).to(device))
+                  phase_echo=shot_phase_tensor,
+                  combine_echo=True,
+                  phase_slice=sms_phase_tensor,
+                  N_basis=N_latent,
+                  basis=model,
+                  baseline=torch.from_numpy(DWI_MUSE[[0]]).to(device))
 
     print('S ishape: ', S.ishape)
     print('S oshape: ', S.oshape)

@@ -71,7 +71,7 @@ class network_parameters:
         now = datetime.now()
         dir_name = now.strftime("%Y-%m-%d")
 
-        dir_name += '_' + self.model
+        dir_name += '_' + self.model.lower()
 
         dir_name += '_' + data_str
         dir_name += '_latent-' + str(self.latent).zfill(2)
@@ -173,7 +173,7 @@ class losses:
             lossFile.create_dataset('reconLoss' + str(epoch), data=torch.tensor(self.recon).detach().cpu().numpy())
             lossFile.create_dataset('testReconLoss' + str(epoch), data=torch.tensor(self.testRecon).detach().cpu().numpy())
             lossFile.create_dataset('testKldLoss' + str(epoch), data=torch.tensor(self.testKld).detach().cpu().numpy())
-            lossFile.create_dataset('means' + str(epoch), data=torch.tensor(self.means).detach().cpu().numpy())
+            lossFile.create_dataset('means' + str(epoch), data=np.array(self.means))
             lossFile.create_dataset('standards' + str(epoch), data=torch.tensor(self.standards).detach().cpu().numpy())
 
         lossFile.close()
@@ -214,7 +214,7 @@ def train(network_parameters, loader_train, optim, model, device, loss_function,
             recon_t, mu, logvar = model(noisy_t)
 
             loss_lossf = loss_function(recon_t, clean_t)
-            loss_lossf *= 32
+            loss_lossf *= 300
             KLD = autoencoder.loss_function_kld(mu, logvar)
             loss = loss_lossf + network_parameters.kld_weight*KLD
             kld_loss += (network_parameters.kld_weight*KLD).item()
@@ -353,55 +353,6 @@ def setup(config_dict):
 
     return NetworkParameters, x_clean, original_D, B
 
-# %%
-class DwiDataset(data.Dataset):
-
-    def __init__(self, x_noisy, x_clean, noise_amount, transform=None):
-
-        self.x_noisy = x_noisy
-        self.x_clean = x_clean
-        self.noise_amount = noise_amount
-
-        print('> DwiDataset x_noisy shape: ', x_noisy.shape)
-
-        self.N_atom = x_clean.shape[0]
-        self.N_diff = x_clean.shape[1]
-
-
-        # transforms.ToTensor() scales images!!!
-        # if transform is None:
-        #     transform = transforms.Compose([transforms.ToTensor()])
-
-        self.transform = transform
-
-    def __len__(self):
-
-        assert (len(self.x_noisy) == len(self.x_clean))
-        return len(self.x_noisy)
-
-    def __getitem__(self, idx):
-
-        x_noisy = self.x_noisy[idx]
-        x_clean = self.x_clean[idx]
-        noise_amount = self.noise_amount[idx]
-
-        if self.transform is not None:
-            x_noisy = self.transform(x_noisy)
-            x_clean = self.transform(x_clean)
-
-        return (x_noisy, x_clean, noise_amount)
-
-# %%
-def add_noise(x_clean, scale):
-
-    x_noisy = x_clean + np.random.normal(loc = 0,
-                                         scale = scale,
-                                         size=x_clean.shape)
-
-    x_noisy[x_noisy < 0.] = 0.
-    x_noisy[x_noisy > 1.] = 1.
-
-    return x_noisy
 
 # %%
 def create_noisy_dataset(train_set, test_set, NetworkParameters):
@@ -417,10 +368,10 @@ def create_noisy_dataset(train_set, test_set, NetworkParameters):
         sd = 0.01 + id * 0.03
 
 
-        train_set_copy[:][0][:] = add_noise(train_set_copy[:][1], sd)
+        train_set_copy[:][0][:] = bloch.add_noise(train_set_copy[:][1], sd)
         train_set_copy[:][2][:] = id
 
-        test_set_copy[:][0][:] = add_noise(test_set_copy[:][1], sd)
+        test_set_copy[:][0][:] = bloch.add_noise(test_set_copy[:][1], sd)
         test_set_copy[:][2][:] = id
 
         # TODO: remove for loops
@@ -448,7 +399,7 @@ def create_data_loader(x_clean, original_D, NetworkParameters):
     x_clean = np.transpose(x_clean)
     original_D = np.transpose(original_D)
 
-    dataset = DwiDataset(x_clean, x_clean, noise_amount)
+    dataset = bloch.DwiDataset(x_clean, x_clean, noise_amount)
 
     datalen = len(dataset)
 
@@ -486,7 +437,7 @@ def main():
 
     NetworkParameters, x_clean, original_D, B = setup(config_dict)
 
-    loader_train, loader_test = create_data_loader(x_clean, original_D, NetworkParameters)
+    loader_train, loader_test = bloch.create_data_loader(x_clean, original_D, NetworkParameters)
 
     device = NetworkParameters.set_device()
     model = NetworkParameters.set_model(NetworkParameters.N_diff, device)

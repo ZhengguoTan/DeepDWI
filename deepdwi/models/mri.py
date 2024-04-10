@@ -161,27 +161,33 @@ class Sense(nn.Module):
     def forward(self, x):
 
         assert torch.is_tensor(x)
-        img_shape = list(x.shape[1:])
+        img_post_shape = list(x.shape[-5:])
+        img_prev_shape = list(x.shape[:-6])
 
         # subspace modeling
         if self.basis is not None:
 
+            x2 = torch.swapaxes(x, 0, -6)
+            x2 = x2.view(x2.shape[0], -1)
+
             if jit.isinstance(self.basis, torch.Tensor):
                 # linear subspace matrix
                 N_ful, N_sub = self.basis.shape
-                x1 = self.basis @ x.view(x.shape[0], -1)
 
-                x_proj = x1.view([N_ful] + img_shape)
+                x1 = self.basis @ x2
 
             elif jit.isinstance(self.basis, nn.Module):
                 # deep nonlinear subspace
-                x1 = x.view(x.shape[0], -1).T
-                x2 = self.basis.decode(x1)
-
-                x_proj = x2.T.view([self.y.shape[0]] + img_shape)
+                x2 = x2.T
+                x1 = self.basis.decode(x2)
+                x1 = x1.T
 
             elif jit.isinstance(self.basis, Callable):
-                x_proj = self.basis(x)
+                x1 = self.basis(x2)
+
+            x1 = x1.view(tuple([self.y.shape[-6]] + [*img_prev_shape, *img_post_shape]))
+            x_proj = torch.swapaxes(x1, -6, 0)
+
 
             if self.baseline is not None:
                 x_proj = self.baseline * x_proj

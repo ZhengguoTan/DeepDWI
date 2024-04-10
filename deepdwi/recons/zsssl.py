@@ -190,6 +190,15 @@ class AlgUnroll(nn.Module):
         TODO: docomentation
 
     References:
+        * Yang Y, Sun J, Li H, Xu Z.
+          ADMM-CSNet: A deep learning approach for image compressive sensing.
+          IEEE Transactions on Pattern Analysis and Machine Intelligence (2018). DOI: 10.1109/TPAMI.2018.2883941
+        * Hammernik K, Klatzer T, Kobler E, Recht MP, Sodickson DK, Pock T, Knoll F.
+          Learning a variational network for reconstruction of accelerated MRI data.
+          Magn Reson Med (2018). DOI: 10.1002/mrm.26977
+        * Aggarwal HK, Mani MP, Jacob M.
+          MoDL: Model-based deep learning architecture for inverse problems.
+          IEEE Transactions on Medical Imaging (2019). DOI: 10.1109/TMI.2018.2865356
         * Monga V, Li Y, Eldar Y.
           Algorithm Unrolling: Interpretable, Efficient Deep Learning for Signal and Image Processing.
           IEEE Signal Processing Magazine (2021). DOI: 10.1109/MSP.2020.3016905

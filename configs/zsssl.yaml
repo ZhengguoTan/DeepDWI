@@ -32,14 +32,16 @@ model:
   N_residual_block: 12
   unrolled_algorithm: ADMM  # ADMM, MoDL, VarNet
   ADMM_rho: 0.05
-  N_unroll: 8
+  N_unroll: 7
   kernel_size: 3
   features: 128
   contrasts_in_channels: True  #
   max_cg_iter: 6
-  lamda: 0.05
+  lamda: 1.00
   requires_grad_lamda: True
   batch_norm: False
+  latent: /examples/2024-03-14_vae_1.0mm_21-dir_R1x3_latent-06/train_VAE_Latent06_final.pt
+  N_latent: 6
 
 optim:
   method: Adam

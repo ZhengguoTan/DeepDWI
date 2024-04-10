@@ -8,12 +8,14 @@ import yaml
 
 import matplotlib.pyplot as plt
 import numpy as np
+import torch.jit as jit
 import torch.nn as nn
 import torch.optim as optim
 
 from deepdwi import util, prep
 from deepdwi.dims import *
 from deepdwi.models import mri
+from deepdwi.models import autoencoder as ae
 from deepdwi.recons import zsssl
 from torch.utils.data import DataLoader
 
@@ -134,6 +136,7 @@ if __name__ == "__main__":
     print('    contrasts_in_channels: ', model_conf['contrasts_in_channels'])
     print('    requires_grad_lamda: ', model_conf['requires_grad_lamda'])
     print('    batch_norm: ', model_conf['batch_norm'])
+    print('    latent: ', model_conf['latent'])
 
     optim_conf = config_dict.get('optim', {})
     print('> optim_conf: ')
@@ -177,14 +180,15 @@ if __name__ == "__main__":
 
 
     # %%
-    coil4, kdat6, phase_shot, phase_slice, mask = \
+    coil4, kdat6, phase_shot, phase_slice, mask, DWI_MUSE = \
         prep.prep_dwi_data(data_file=data_conf['kdat'],
                            navi_file=data_conf['navi'],
                            coil_file=data_conf['coil'],
                            slice_idx=data_conf['slice_idx'],
                            norm_kdat=data_conf['normalize_kdat'],
                            N_shot_retro=data_conf['N_shot_retro'],
-                           N_diff_retro=data_conf['N_diff_retro'])
+                           N_diff_retro=data_conf['N_diff_retro'],
+                           return_muse=True)
 
     mask, train_mask, lossf_mask, valid_mask = \
         prep_mask(mask, N_repeats=data_conf['repeats'],
@@ -204,8 +208,22 @@ if __name__ == "__main__":
     print('>>> lossf_mask shape\t: ', lossf_mask.shape, ' type: ', lossf_mask.dtype)
     print('>>> valid_mask shape\t: ', valid_mask.shape, ' type: ', valid_mask.dtype)
 
+
+    N_latent = model_conf['N_latent']
+    if model_conf['latent'] is not None:
+        latent_model = ae.VAE(input_features=21, latent_features=N_latent)
+        latent_model.load_state_dict(torch.load(HOME_DIR + model_conf['latent']))
+    else:
+        latent_model = None
+
+    print('latent_model is nn.Module: ', (latent_model is nn.Module))
+
+
     S = mri.Sense(coil7[0], kdat7[0], phase_slice=phase_slice7[0],
-                  phase_echo=phase_shot7[0], combine_echo=True)
+                  phase_echo=phase_shot7[0], combine_echo=True,
+                  N_basis=model_conf['N_latent'],
+                  basis=latent_model,
+                  baseline=torch.from_numpy(DWI_MUSE[[0]]))
     ishape = [data_conf['batch_size']] + list(S.ishape)
     print('>>> ishape to AlgUnroll: ', ishape)
     del S
@@ -233,7 +251,8 @@ if __name__ == "__main__":
                             features=model_conf['features'],
                             contrasts_in_channels=model_conf['contrasts_in_channels'],
                             max_cg_iter=model_conf['max_cg_iter'],
-                            use_batch_norm=model_conf['batch_norm']).to(device)
+                            use_batch_norm=model_conf['batch_norm'],
+                            real_value_images=jit.isinstance(latent_model, nn.Module)).to(device)
 
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
     params = sum([np.prod(p.size()) for p in model_parameters])
@@ -283,9 +302,16 @@ if __name__ == "__main__":
                 phase_echo = phase_echo.to(device)
                 phase_slice = phase_slice.to(device)
 
+                if latent_model is not None:
+                    latent_model.to(device)
+                    baseline = torch.from_numpy(DWI_MUSE[[0]]).to(device)
+
                 # apply Model
-                batch_x, lamda, ynet, yref = model(sens, kspace, train_mask, lossf_mask,
-                                                phase_echo, phase_slice)
+                batch_x, lamda, ynet, yref = model(sens, kspace,
+                                                   train_mask, lossf_mask,
+                                                   phase_echo, phase_slice,
+                                                   N_basis=N_latent, basis=latent_model,
+                                                   baseline=baseline)
 
                 epoch_x.append(batch_x)
 
@@ -318,8 +344,11 @@ if __name__ == "__main__":
                     phase_slice = phase_slice.to(device)
 
                     # apply Model
-                    _, lamda, ynet, yref = model(sens, kspace, train_mask, lossf_mask,
-                                                phase_echo, phase_slice)
+                    _, lamda, ynet, yref = model(sens, kspace,
+                                                 train_mask, lossf_mask,
+                                                 phase_echo, phase_slice,
+                                                 N_basis=N_latent, basis=latent_model,
+                                                 baseline=baseline)
 
                     # loss
                     valid_loss = lossf(ynet, yref)

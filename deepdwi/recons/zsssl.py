@@ -4,6 +4,8 @@ This module implements Zero-Shot Self-Supervised Learning
 """
 import torch
 import torch.nn as nn
+import torch.jit as jit
+import torch.optim as optim
 
 from deepdwi import lsqr, util
 from deepdwi.models import mri, resnet, unet
@@ -105,6 +107,7 @@ class Dataset(torch.utils.data.Dataset):
 class Trafos(nn.Module):
     def __init__(self, ishape: Tuple[int, ...],
                  contrasts_in_channels: bool = False,
+                 real_value_images: bool = False,
                  verbose: bool = False):
         super(Trafos, self).__init__()
 
@@ -117,23 +120,28 @@ class Trafos(nn.Module):
         D, H, W = P1_oshape[-3], P1_oshape[-2], P1_oshape[-1]
 
         R2_oshape = [N_rep * N_z, D, H, W]
-        P2_oshape = [R2_oshape[0], 2, D, H, W]
+        P2_oshape = [R2_oshape[0], 1 if real_value_images else 2, D, H, W]
 
         R1 = util.Reshape(tuple(R1_oshape), ishape)
         P1 = util.Permute(tuple(R1_oshape), (0, 2, 1, 4, 3))
 
         R2 = util.Reshape(tuple(R2_oshape), P1_oshape)
 
-        C2R = util.C2R()
+        if real_value_images is True:
+            C2R = util.Reshape(tuple(R2_oshape +[1]), tuple(R2_oshape))
+            C2R_oshape = C2R.oshape
+        else:
+            C2R = util.C2R()
+            C2R_oshape = tuple(R2_oshape + [2])
 
-        P2 = util.Permute(tuple(R2_oshape + [2]), (0, 4, 1, 2, 3))
+        P2 = util.Permute(C2R_oshape, (0, 4, 1, 2, 3))
 
         self.fwd = nn.ModuleList([R1, P1, R2, C2R, P2])
 
         if contrasts_in_channels is True:
             P3 = util.Permute(tuple(P2_oshape), (0, 2, 1, 3, 4))
             self.fwd.append(P3)
-            R3 = util.Reshape(tuple([P2_oshape[0], 2 * D, H, W]), P3.oshape)
+            R3 = util.Reshape(tuple([P2_oshape[0], P2_oshape[1] * D, H, W]), P3.oshape)
             self.fwd.append(R3)
 
             self.oshape = R3.oshape
@@ -216,15 +224,18 @@ class AlgUnroll(nn.Module):
                  features: int = 64,
                  max_cg_iter: int = 10,
                  contrasts_in_channels: bool = False,
-                 use_batch_norm: bool = False):
+                 use_batch_norm: bool = False,
+                 real_value_images: bool = False):
         super(AlgUnroll, self).__init__()
 
         if NN == 'ResNet3D':
             contrasts_in_channels = False
             print('> set contrasts_in_channels to False!')
 
+        self.ishape = ishape
         self.T = Trafos(ishape,
-                        contrasts_in_channels=contrasts_in_channels)
+                        contrasts_in_channels=contrasts_in_channels,
+                        real_value_images=real_value_images)
 
         print('> Trafos oshape: ', self.T.oshape)
 
@@ -273,7 +284,10 @@ class AlgUnroll(nn.Module):
                 train_mask: torch.Tensor,
                 lossf_mask: torch.Tensor,
                 phase_echo: torch.Tensor = None,
-                phase_slice: torch.Tensor = None):
+                phase_slice: torch.Tensor = None,
+                N_basis: int = 6,
+                basis: Union[torch.Tensor, nn.Module, Callable] = None,
+                baseline: torch.Tensor = None):
         """
         Args:
             * ikspace (torch.Tensor): input k-space
@@ -285,16 +299,25 @@ class AlgUnroll(nn.Module):
         train_kspace = train_mask * kspace
         SenseT = mri.Sense(sens, train_kspace,
                            phase_echo=phase_echo, combine_echo=True,
-                           phase_slice=phase_slice)
+                           phase_slice=phase_slice,
+                           N_basis=N_basis, basis=basis,
+                           baseline=baseline)
 
-        x = SenseT.adjoint(SenseT.y)  # x0: AHy
+        if jit.isinstance(basis, nn.Module):
+            x = torch.zeros(self.ishape, dtype=torch.float32,
+                            device=sens.device, requires_grad=True)
+        else:
+            x = SenseT.adjoint(SenseT.y)  # x0: AHy
+
         v = x.clone()
         u = torch.zeros_like(x)
 
         refer_kspace = lossf_mask * kspace
         SenseL = mri.Sense(sens, refer_kspace,
                            phase_echo=phase_echo, combine_echo=True,
-                           phase_slice=phase_slice)
+                           phase_slice=phase_slice,
+                           N_basis=N_basis, basis=basis,
+                           baseline=baseline)
 
         if self.unrolled_algorithm == 'VarNet':
             self.max_eig = self.get_max_eig(SenseT)
@@ -326,11 +349,28 @@ class AlgUnroll(nn.Module):
 
             elif self.unrolled_algorithm == 'ADMM':
 
-                AHA = lambda x: SenseT.adjoint(SenseT(x)) + self.ADMM_rho * x
-                AHy = SenseT.adjoint(SenseT.y) + self.ADMM_rho * (v - u)
-
                 # update x
-                x = conj_grad(AHA, AHy, max_iter=self.max_cg_iter)
+                if jit.isinstance(basis, nn.Module):
+                    lossf = nn.MSELoss(reduction='sum')
+                    optimizer = optim.Adam([x], lr=0.1)
+
+                    for it in range(50):
+                        fwd = SenseT(x)
+                        res = lossf(torch.view_as_real(fwd), torch.view_as_real(SenseT.y)) + self.ADMM_rho/2 * lossf(x+u, v) * 0.0001
+
+                        optimizer.zero_grad()
+                        res.backward(retain_graph=True)
+                        optimizer.step()
+
+                        print('> inner epoch %3d loss %.12f'%(it, res.item()))
+
+                    # x = x.detach()
+
+                else:
+                    AHA = lambda x: SenseT.adjoint(SenseT(x)) + self.ADMM_rho * x
+                    AHy = SenseT.adjoint(SenseT.y) + self.ADMM_rho * (v - u)
+                    x = conj_grad(AHA, AHy, max_iter=self.max_cg_iter)
+
                 # update v
                 v = x + u
                 v = self.T(v)
@@ -360,7 +400,7 @@ class AlgUnroll(nn.Module):
             max_eig = torch.linalg.norm(y).ravel()
             x = y / max_eig
 
-            print('%12.6f'%(max_eig))
+            # print('%12.6f'%(max_eig))
 
         return max_eig
 

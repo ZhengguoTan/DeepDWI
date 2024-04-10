@@ -1,7 +1,7 @@
 #!/bin/bash
 
 declare -a SVG_MAIN_FILE=(
-    models/models  # 1
+    models/model_vae  # 1
 )
 
 ARR_LEN=${#SVG_MAIN_FILE[@]}

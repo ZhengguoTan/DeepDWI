@@ -65,6 +65,19 @@ def estimate_weights(y, coil_dim: int = 0):
     return weights
 
 
+class Identity(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, input: torch.Tensor):
+        return input
+
+    def adjoint(self, input: torch.Tensor):
+        return input
+
+    def normal(self, input: torch.Tensor):
+        return input
+
 class Reshape(nn.Module):
     """Reshape input to given output shape.
 

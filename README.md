@@ -25,11 +25,17 @@ DeepDWI requires Python version >= 3.10.13.
 
 ### Installation for Developers
 
+```
+cd /path/to/DeepDWI
+python -m pip install -e .
+```
 
 ## Features
 
 
 ## Data
+
+Before running the scripts in `DeepDWI`, you need to download the following data to the `/data/` folder:
 
 | Spatial Resolution (mm3) | Diffusion Mode | Acceleration (in-plane x slice) | Shots | Navigator | Link |
 |---|---|---|---|---|---|

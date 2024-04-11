@@ -304,7 +304,8 @@ if __name__ == "__main__":
 
                 if latent_model is not None:
                     latent_model.to(device)
-                    baseline = torch.from_numpy(DWI_MUSE[[0]]).to(device)
+
+                baseline = torch.from_numpy(DWI_MUSE[[0]]).to(device)
 
                 # apply Model
                 batch_x, lamda, ynet, yref = model(sens, kspace,

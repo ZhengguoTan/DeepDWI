@@ -1,10 +1,7 @@
 
-This folder creates the figures related to variational autoencoder (VAE).
+# This folder creates figures for variational autoencoder (VAE).
 
 The following bash blocks assume that you are under the `DeepDWI` directory.
-
-
-# Experiments
 
 ## 1. train a VAE model
 

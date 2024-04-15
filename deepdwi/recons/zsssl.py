@@ -245,11 +245,6 @@ class AlgUnroll(nn.Module):
                                              features=self.features,
                                              use_batch_norm=use_batch_norm)
             print('> Use ResNet2D')
-        elif self.NN == 'ResNetMAPLE':
-            self.NN_Module = resnet.ResNetMAPLE(in_channels=self.T.oshape[1],
-                                                N_residual_block=N_residual_block,
-                                                features=self.features)
-            print('> Use ResNetMAPLE')
         elif self.NN == 'UNet':
             self.NN_Module = unet.Unet(in_channels=self.T.oshape[1],
                                        out_channels=self.T.oshape[1],

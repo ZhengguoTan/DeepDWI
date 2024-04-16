@@ -18,6 +18,7 @@ class VAE(nn.Module):
         self.model = model
 
     def forward(self, input: torch.Tensor,
+                alpha: float = 1.,
                 contrast_dim: int = DIM_TIME):
         baseline = input[0]
 
@@ -34,13 +35,13 @@ class VAE(nn.Module):
         output4_shape = output4.shape
 
         # magnitude and phase
-        output4_mag = abs(output4)
+        output4_mag = abs(output4).float()
         output4_phs = torch.angle(output4)
 
         with torch.no_grad():
             output5, _, _ = self.model(output4_mag)
 
-        output5 = output5 * output4_phs
+        output5 = alpha * output5 * output4_phs
 
         output4b = torch.transpose(output5, 1, 0)
 

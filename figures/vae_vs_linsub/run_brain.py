@@ -62,7 +62,7 @@ DWI_MUSE_tensor = torch.from_numpy(DWI_MUSE).to(device)
 
 prox_vae = prox.VAE(model)
 
-DWI_VAE_tensor = prox_vae(DWI_MUSE_tensor, 0)
+DWI_VAE_tensor = prox_vae(DWI_MUSE_tensor, contrast_dim=0)
 DWI_VAE = DWI_VAE_tensor.detach().cpu().numpy()
 
 

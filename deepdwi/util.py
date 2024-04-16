@@ -142,6 +142,32 @@ class Permute(nn.Module):
         return input
 
 
+class Transpose(nn.Module):
+    """swap two axes on the given input tensor
+
+    Args:
+        dims (None or tuple of ints): Axes to transpose input.
+
+    """
+
+    def __init__(self,
+                 dim0: int = None,
+                 dim1: int = None):
+        self.dim0 = dim0
+        self.dim1 = dim1
+
+        super().__init__()
+
+    def forward(self, input: torch.Tensor):
+        return torch.transpose(input, self.dim0, self.dim1)
+
+    def adjoint(self, input: torch.Tensor):
+        return torch.transpose(input, self.dim1, self.dim0)
+
+    def normal(self, input: torch.Tensor):
+        return input
+
+
 class C2R(nn.Module):
     """View as Real
 

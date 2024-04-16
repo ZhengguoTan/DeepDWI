@@ -6,7 +6,7 @@ import yaml
 import numpy as np
 
 from deepdwi import prep, util
-from deepdwi.models import bloch
+from deepdwi.models import bloch, prox
 from deepdwi.models import autoencoder as ae
 from deepdwi.recons import linsub
 
@@ -52,28 +52,19 @@ print('> MUSE shape: ', DWI_MUSE.shape)
 DWI_MUSE = np.squeeze(DWI_MUSE)
 N_diff, N_z, N_y, N_x = DWI_MUSE.shape
 
-# %% VAE reconstruction
+# %% VAE Decoder Reconstruction
 print('>>> VAE reconstruction ...')
 model = ae.VAE(input_features=N_diff, latent_features=N_latent)
 model.load_state_dict(torch.load(HOME_DIR + model_conf['checkpoint'], map_location=torch.device('cpu')))
 model.to(device)
 
-DWI_MUSE_scale = np.divide(DWI_MUSE, DWI_MUSE[0],
-                           out=np.zeros_like(DWI_MUSE), where=DWI_MUSE!=0)
+DWI_MUSE_tensor = torch.from_numpy(DWI_MUSE).to(device)
 
-DWI_MUSE_tensor = torch.from_numpy(abs(DWI_MUSE_scale)).to(device)
+prox_vae = prox.VAE(model)
 
-R = util.Reshape((N_diff, N_z*N_y*N_x), DWI_MUSE.shape)
-P = util.Permute(R.oshape, dims=[1, 0])
-
-DWI_MUSE_2_tensor = P(R(DWI_MUSE_tensor))
-
-with torch.no_grad():
-    DWI_VAE_2_tensor, _, _ = model(DWI_MUSE_2_tensor)
-
-DWI_VAE_tensor = R.adjoint(P.adjoint(DWI_VAE_2_tensor))
+DWI_VAE_tensor = prox_vae(DWI_MUSE_tensor, 0)
 DWI_VAE = DWI_VAE_tensor.detach().cpu().numpy()
-DWI_VAE = DWI_VAE * DWI_MUSE[0]
+
 
 # %% LINSUB reconstruction
 print('>>> LINSUB reconstruction ...')
@@ -93,7 +84,7 @@ linsub_basis_tensor = linsub.learn_linear_subspace(x_clean_tensor,
                                                    num_coeffs=N_latent,
                                                    use_error_bound=False)
 
-DWI_LINSUB_tensor = linsub_basis_tensor @ linsub_basis_tensor.T @ DWI_MUSE_tensor.view(N_diff, -1)
+DWI_LINSUB_tensor = linsub_basis_tensor @ linsub_basis_tensor.T @ abs(DWI_MUSE_tensor).view(N_diff, -1)
 
 DWI_LINSUB_tensor = DWI_LINSUB_tensor.view(DWI_MUSE_tensor.shape)
 

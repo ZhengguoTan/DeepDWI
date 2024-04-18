@@ -20,6 +20,8 @@ print('> HOME: ', HOME_DIR)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+plt.rcParams['font.family'] = 'monospace'
+
 # %% read in and display the yaml config file
 with open(DIR + '/config.yaml', 'r') as f:
     config_dict = yaml.load(f, Loader=yaml.FullLoader)
@@ -61,12 +63,12 @@ means = means.detach().numpy()
 # %% Create MSE figure
 
 for i in range(N_latent):
-     std = stds[i]
-     mean = means[i]
-     x = np.linspace(mean - 5*std, mean + 5*std, 100)
-     plt.plot(x, stats.norm.pdf(x, mean, std))
-title = 'Latent distributions'
-plt.title(title)
+    std = stds[i]
+    mean = means[i]
+    x = np.linspace(mean - 5*std, mean + 5*std, 100)
+    plt.plot(x, stats.norm.pdf(x, mean, std), label='Latent #' + str(i+1))
+
+plt.legend()
 
 plt.savefig(DIR + '/vae_latent.png',
             bbox_inches='tight', pad_inches=0, dpi=300)

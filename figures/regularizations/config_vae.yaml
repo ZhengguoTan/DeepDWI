@@ -1,0 +1,17 @@
+
+data:
+  kdat: /data/1.0mm_21-dir_R1x3_kdat_slice_010.h5
+  navi: null
+  slice_idx: 10
+  coil: /data/1.0mm_21-dir_R1x3_coils.h5
+  dvs: /data/1.0mm_21-dir_R1x3_dvs.h5
+
+model:
+  checkpoint: /examples/2024-03-14_vae_1.0mm_21-dir_R1x3_latent-06/train_VAE_Latent06_final.pt
+  N_latent: 6
+
+ADMM:
+  iteration: 10
+  max_cg_iter: 6
+  rho: 0.01
+  lamda: 0.001

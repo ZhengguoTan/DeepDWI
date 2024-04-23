@@ -11,7 +11,7 @@ model:
   N_latent: 6
 
 ADMM:
-  iteration: 10
+  iteration: 15
   max_cg_iter: 6
   rho: 0.01
   lamda: 0.001

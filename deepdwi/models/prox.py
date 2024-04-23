@@ -41,7 +41,7 @@ class VAE(nn.Module):
         with torch.no_grad():
             output5, _, _ = self.model(output4_mag)
 
-        output5 = alpha * output5 * output4_phs
+        output5 = alpha * output5 * torch.exp(1j * output4_phs)
 
         output4b = torch.transpose(output5, 1, 0)
 

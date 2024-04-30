@@ -5,11 +5,14 @@ import torch
 import yaml
 
 import numpy as np
+import sigpy as sp
 
 from deepdwi import prep
 from deepdwi.models import mri, prox
 from deepdwi.models import autoencoder as ae
 from deepdwi.recons import zsssl
+
+from sigpy.mri import app
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -17,7 +20,7 @@ HOME_DIR = DIR.rsplit('/', 1)[0]
 HOME_DIR = HOME_DIR.rsplit('/', 1)[0]
 print('> HOME: ', HOME_DIR)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = sp.Device(0 if torch.cuda.is_available() else -1)
 
 # %% read in and display the yaml config file
 with open(DIR + '/config_vae.yaml', 'r') as f:
@@ -45,7 +48,6 @@ print('    lamda: ', admm_conf['lamda'])
 
 N_latent = model_conf['N_latent']
 
-
 # %% user options
 parser = argparse.ArgumentParser(description='run zsssl.')
 
@@ -72,69 +74,28 @@ DWI_MUSE = np.squeeze(DWI_MUSE)
 N_diff, N_z, N_y, N_x = DWI_MUSE.shape
 
 # %% VAE as Regularization for Reconstruction
-print('>>> VAE as regularization for reconstruction ...')
+print('>>> LLR as regularization for reconstruction ...')
 
-# load VAE model
-model = ae.VAE(input_features=N_diff, latent_features=N_latent)
-model.load_state_dict(torch.load(HOME_DIR + model_conf['checkpoint'], map_location=torch.device('cpu')))
-model.to(device)
+kdat6 = sp.to_device(kdat6, device=device)
+coil4 = sp.to_device(coil4, device=device)
+phase_slice = sp.to_device(phase_slice, device=device)
+phase_shot = sp.to_device(phase_shot, device=device)
 
-prox_vae = prox.VAE(model)
-
-
-coil4_tensor = torch.from_numpy(coil4).to(device)
-kdat6_tensor = torch.from_numpy(kdat6).to(device)
-phase_shot_tensor = torch.from_numpy(phase_shot).to(device)
-phase_slice_tensor = torch.from_numpy(phase_slice).to(device)
-mask_tensor = torch.from_numpy(mask).to(device)
-
-
-A = mri.Sense(coil4_tensor, kdat6_tensor,
-              phase_echo=phase_shot_tensor, combine_echo=True,
-              phase_slice=phase_slice_tensor)
-
-# ADMM
-
-lamda = admm_conf['lamda']
-rho = admm_conf['rho']
-ABSTOL = 1E-4
-RELTOL = 1E-3
-verbose = True
-
-x = A.adjoint(A.y)
-v = x.clone()
-u = torch.zeros_like(x)
-
-for n in range(admm_conf['iteration']):
-
-    AHA = lambda x: A.adjoint(A(x)) + rho * x
-    AHy = A.adjoint(A.y) + rho * (v - u)
-
-    # update x
-    x = zsssl.conj_grad(AHA, AHy, max_iter=admm_conf['max_cg_iter'])
-    # update v
-    v_old = v.clone()
-    v = prox_vae(x + u, alpha=lamda / rho)
-
-    if verbose:
-        r_norm = torch.linalg.norm(x - v).item()
-        s_norm = torch.linalg.norm(-rho * (v - v_old)).item()
-
-        r_scaling = max(torch.linalg.norm(x).item(),
-                        torch.linalg.norm(v).item())
-        s_scaling = rho * torch.linalg.norm(u).item()
-
-        eps_pri = ABSTOL * (np.prod(v.shape)**0.5) + RELTOL * r_scaling
-        eps_dual = ABSTOL * (np.prod(v.shape)**0.5) + RELTOL * s_scaling
-
-        print('admm iter: ' + "%2d" % (n+1) +
-              ', r norm: ' + "%10.4f" % (r_norm) +
-              ', eps pri: ' + "%10.4f" % (eps_pri) +
-              ', s norm: ' + "%10.4f" % (s_norm) +
-              ', eps dual: ' + "%10.4f" % (eps_dual))
-
-    # update u
-    u = u + x - v
+dwi_comb_jets = app.HighDimensionalRecon(
+                                kdat6, coil4,
+                                phase_sms=phase_slice,
+                                combine_echo=True,
+                                phase_echo=phase_shot,
+                                regu='LLR',
+                                blk_shape=(1, 6, 6),
+                                blk_strides=(1, 1, 1),
+                                solver='ADMM',
+                                normalization=True,
+                                lamda=0.01,
+                                rho=0.05,
+                                max_iter=15,
+                                show_pbar=False, verbose=True,
+                                device=device).run()
 
 # %% save output
 if args.N_shot_retro > 0:
@@ -142,7 +103,7 @@ if args.N_shot_retro > 0:
 else:
     SHOT_STR = ''
 
-f = h5py.File(DIR + '/vae_regu' + SHOT_STR + '.h5', 'w')
+f = h5py.File(DIR + '/llr_regu' + SHOT_STR + '.h5', 'w')
 f.create_dataset('MUSE', data=DWI_MUSE)
-f.create_dataset('VAE', data=x.detach().cpu().numpy())
+f.create_dataset('LLR', data=sp.to_device(dwi_comb_jets))
 f.close()

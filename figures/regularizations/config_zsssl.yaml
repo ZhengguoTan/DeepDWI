@@ -1,0 +1,43 @@
+method: zsssl
+
+data:
+  kdat: /data/1.0mm_21-dir_R1x3_kdat_slice_010.h5
+  navi: null
+  slice_idx: 10
+  coil: /data/1.0mm_21-dir_R1x3_coils.h5
+  normalize_kdat: 1.0  # important
+  valid_rho: 0.2
+  train_rho: 0.4
+  repeats: 15
+  batch_size: 1
+  N_shot_retro: 2
+  N_diff_retro: 42
+
+model:
+  net: ResNet2D
+  N_residual_block: 12
+  unrolled_algorithm: ADMM  # ADMM, MoDL, VarNet
+  ADMM_rho: 0.05
+  N_unroll: 8
+  kernel_size: 3
+  features: 128
+  contrasts_in_channels: True  #
+  max_cg_iter: 6
+  lamda: 0.05
+  requires_grad_lamda: True
+  batch_norm: False
+
+optim:
+  method: Adam
+  lr: 0.0005
+  step_size: 30
+  gamma: 0.1
+
+loss: MixL1L2Loss
+
+learn:
+  epochs: 100
+  valid_loss_tracker: 12
+
+test: # only used when in the 'test' mode
+  checkpoint: /examples/2024-04-16_zsssl_1.0mm_21-dir_R1x3_kdat_slice_010_norm-kdat-1.0_self_ResNet2D_ResBlock-12_kernel-3_ADMM_08_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_best.pth

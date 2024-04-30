@@ -5,6 +5,7 @@ data:
   slice_idx: 10
   coil: /data/1.0mm_21-dir_R1x3_coils.h5
   dvs: /data/1.0mm_21-dir_R1x3_dvs.h5
+  N_shot_retro: 0
 
 model:
   checkpoint: /examples/2024-03-14_vae_1.0mm_21-dir_R1x3_latent-06/train_VAE_Latent06_final.pt
@@ -13,5 +14,5 @@ model:
 ADMM:
   iteration: 15
   max_cg_iter: 6
-  rho: 0.01
+  rho: 0.005
   lamda: 0.001

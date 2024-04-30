@@ -35,3 +35,7 @@ python ../../examples/run_zsssl.py --config /figures/regularizations/config_zsss
 ```bash
 python plot.py
 ```
+
+<p align="center">
+  <img alt="Light" src="regularizations.png" width="100%">
+</p>

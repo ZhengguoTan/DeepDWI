@@ -27,8 +27,12 @@ python plot_mse.py  # this outputs 'vae_vs_linsub_mse.png'
 ```bash
 cd ${DWIDIR}/figures/vae_vs_linsub
 python run_brain.py
-python plot_brain.py  # this outputs 'vae_vs_linsub_brain_diff_xx.png'
+python plot_brain.py --diff_idx 19  # this outputs 'vae_vs_linsub_brain_diff_19.png'
 ```
+
+<p align="center">
+  <img alt="Light" src="vae_vs_linsub_brain_diff_19.png" width="100%">
+</p>
 
 ## 4. plot the learned data distribution
 
@@ -36,3 +40,7 @@ python plot_brain.py  # this outputs 'vae_vs_linsub_brain_diff_xx.png'
 cd ${DWIDIR}/figures/vae_vs_linsub
 python plot_latent.py  # this outputs 'vae_latent.png'
 ```
+
+<p align="center">
+  <img alt="Light" src="vae_latent.png" width="100%">
+</p>

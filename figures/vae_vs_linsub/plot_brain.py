@@ -1,3 +1,4 @@
+import argparse
 import h5py
 import os
 
@@ -8,6 +9,14 @@ import numpy as np
 # from skimage.metrics import normalized_root_mse as nrmse
 
 DIR = os.path.dirname(os.path.realpath(__file__))
+
+# %%
+parser = argparse.ArgumentParser(description='plot brain results.')
+
+parser.add_argument('--diff_idx', type=int, default=19,
+                    help='diffusion encoding index')
+
+args = parser.parse_args()
 
 # %%
 f = h5py.File(DIR + '/results.h5', 'r')
@@ -29,7 +38,7 @@ DWI_LINSUB_1 = DWI_LINSUB[:, 1, :, :]
 
 row, col = 2, 3
 
-diff_idx = [19]
+diff_idx = [args.diff_idx]
 
 
 for d in diff_idx:

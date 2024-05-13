@@ -76,6 +76,7 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
     kdat_prep = kdat_prep[..., None, :, :]  # 6 dim
 
     # retro undersampling shots
+    # TODO: retro shots after normalize the kdat?
     if N_shot_retro > 0:
         kdat_prep = retro_usamp_shot(kdat_prep, N_shot_retro)
 
@@ -145,24 +146,28 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
                                 acs_shape)
 
 
-    coils_tensor = sp.to_pytorch(coil2)
-    TR = T.Resize(acs_shape, antialias=True)
-    mps_acs_r = TR(coils_tensor[..., 0]).cpu().detach().numpy()
-    mps_acs_i = TR(coils_tensor[..., 1]).cpu().detach().numpy()
-    mps_acs = mps_acs_r + 1j * mps_acs_i
+    if N_shot > 1:
+        coils_tensor = sp.to_pytorch(coil2)
+        TR = T.Resize(acs_shape, antialias=True)
+        mps_acs_r = TR(coils_tensor[..., 0]).cpu().detach().numpy()
+        mps_acs_i = TR(coils_tensor[..., 1]).cpu().detach().numpy()
+        mps_acs = mps_acs_r + 1j * mps_acs_i
 
-    _, dwi_shot = muse.MuseRecon(ksp_acs, mps_acs,
-                                MB=MB,
-                                acs_shape=acs_shape,
-                                lamda=0.01, max_iter=30,
-                                yshift=yshift,
-                                device=device_sp)
+        _, dwi_shot = muse.MuseRecon(ksp_acs, mps_acs,
+                                    MB=MB,
+                                    acs_shape=acs_shape,
+                                    lamda=0.01, max_iter=30,
+                                    yshift=yshift,
+                                    device=device_sp)
 
 
-    _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=5)
+        _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=5)
 
-    if navi_prep is not None:
-        dwi_shot_phase = np.conj(dwi_shot_phase)
+        if navi_prep is not None:
+            dwi_shot_phase = np.conj(dwi_shot_phase)
+
+    else:
+        dwi_shot_phase = None
 
     # %% sampling mask
     mask = app._estimate_weights(kdat_prep, None, None, coil_dim=-4)
@@ -172,12 +177,31 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
 
     if return_muse is True:
 
-        DWI_MUSE, _ = muse.MuseRecon(kdat_prep, coil2,
-                                     MB=MB,
-                                     acs_shape=acs_shape,
-                                     lamda=0.01, max_iter=30,
-                                     yshift=yshift,
-                                     device=device_sp)
+        if N_shot > 1:
+
+            DWI_MUSE, _ = muse.MuseRecon(kdat_prep, coil2,
+                                        MB=MB,
+                                        acs_shape=acs_shape,
+                                        lamda=0.01, max_iter=30,
+                                        yshift=yshift,
+                                        device=device_sp)
+
+        else:
+
+            kdat_prep_dev = sp.to_device(kdat_prep, device=device_sp)
+            coil2_dev = sp.to_device(coil2, device=device_sp)
+
+            DWI_MUSE = []
+
+            for d in range(N_diff):
+                k = kdat_prep_dev[d]
+
+                A = muse.sms_sense_linop(k, coil2_dev, yshift)
+                R = muse.sms_sense_solve(A, k, lamda=0.01, max_iter=30)
+
+                DWI_MUSE.append(sp.to_device(R))
+
+            DWI_MUSE = np.array(DWI_MUSE)
 
         return coil2, kdat_prep, dwi_shot_phase, sms_phase, mask, DWI_MUSE
 

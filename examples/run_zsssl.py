@@ -50,11 +50,11 @@ def prep_mask(mask: np.ndarray, N_repeats: int = 12,
     train_mask = torch.stack(train_mask)
     lossf_mask = torch.stack(lossf_mask)
 
-    f = h5py.File(DIR + '/mask.h5', 'w')
-    f.create_dataset('train', data=train_mask.detach().cpu().numpy())
-    f.create_dataset('lossf', data=lossf_mask.detach().cpu().numpy())
-    f.create_dataset('valid', data=valid_mask.detach().cpu().numpy())
-    f.close()
+    # f = h5py.File(DIR + '/mask.h5', 'w')
+    # f.create_dataset('train', data=train_mask.detach().cpu().numpy())
+    # f.create_dataset('lossf', data=lossf_mask.detach().cpu().numpy())
+    # f.create_dataset('valid', data=valid_mask.detach().cpu().numpy())
+    # f.close()
 
     return mask, train_mask, lossf_mask, valid_mask
 
@@ -74,13 +74,19 @@ def repeat_data(coil4: np.ndarray,
     kdat7 = kdat7[None, ...]
     kdat7 = torch.tile(kdat7, tuple([N_repeats] + [1] * (kdat7.dim()-1)))
 
-    phase_shot7 = torch.from_numpy(phase_shot)
-    phase_shot7 = phase_shot7[None, ...]
-    phase_shot7 = torch.tile(phase_shot7, tuple([N_repeats] + [1] * (phase_shot7.dim()-1)))
+    if phase_shot is not None:
+        phase_shot7 = torch.from_numpy(phase_shot)
+        phase_shot7 = phase_shot7[None, ...]
+        phase_shot7 = torch.tile(phase_shot7, tuple([N_repeats] + [1] * (phase_shot7.dim()-1)))
+    else:
+        phase_shot7 = None
 
-    phase_slice7 = torch.from_numpy(phase_slice)
-    phase_slice7 = phase_slice7[None, None, None, None, ...]
-    phase_slice7 = torch.tile(phase_slice7, tuple([N_repeats] + [1] * (phase_slice7.dim()-1)))
+    if phase_slice is not None:
+        phase_slice7 = torch.from_numpy(phase_slice)
+        phase_slice7 = phase_slice7[None, None, None, None, ...]
+        phase_slice7 = torch.tile(phase_slice7, tuple([N_repeats] + [1] * (phase_slice7.dim()-1)))
+    else:
+        phase_slice7 = None
 
     return coil7, kdat7, phase_shot7, phase_slice7
 
@@ -197,15 +203,17 @@ if __name__ == "__main__":
 
     print('>>> coil7 shape\t: ', coil7.shape, ' type: ', coil7.dtype)
     print('>>> kdat7 shape\t: ', kdat7.shape, ' type: ', kdat7.dtype)
-    print('>>> phase_shot7 shape\t: ', phase_shot7.shape, ' type: ', phase_shot7.dtype)
-    print('>>> phase_slice7 shape\t: ', phase_slice7.shape, ' type: ', phase_slice7.dtype)
+    # print('>>> phase_shot7 shape\t: ', phase_shot7.shape, ' type: ', phase_shot7.dtype)
+    # print('>>> phase_slice7 shape\t: ', phase_slice7.shape, ' type: ', phase_slice7.dtype)
 
     print('>>> train_mask shape\t: ', train_mask.shape, ' type: ', train_mask.dtype)
     print('>>> lossf_mask shape\t: ', lossf_mask.shape, ' type: ', lossf_mask.dtype)
     print('>>> valid_mask shape\t: ', valid_mask.shape, ' type: ', valid_mask.dtype)
 
-    S = mri.Sense(coil7[0], kdat7[0], phase_slice=phase_slice7[0],
-                  phase_echo=phase_shot7[0], combine_echo=True)
+    S = mri.Sense(coil7[0], kdat7[0],
+                  phase_slice=phase_slice7[0] if phase_slice7 is not None else None,
+                  phase_echo=phase_shot7[0] if phase_shot7 is not None else None,
+                  combine_echo=True)
     ishape = [data_conf['batch_size']] + list(S.ishape)
     print('>>> ishape to AlgUnroll: ', ishape)
     del S

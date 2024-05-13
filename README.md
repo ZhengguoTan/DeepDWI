@@ -9,6 +9,7 @@ In the world of [PyTorch](https://pytorch.org/), deep learning reconstruction fo
 * **Model**, inherited from `torch.nn.Module`, and
 * **Train**, **Validation**, and **Test** stages.
 
+Based on these generic PyTorch structures, DeepDWI implements self-supervised learning image reconstruction techniques for DWI.
 
 ## Installation
 
@@ -16,12 +17,9 @@ DeepDWI requires Python version >= 3.10.13.
 
 * please follow the instructions to install `cupy`: https://docs.cupy.dev/en/stable/install.html
 
+DeepDWI requires [sigpy](https://github.com/ZhengguoTan/sigpy) for the locally low-rank (LLR) reconstruction.
 
-### Via `conda`
-
-
-### Via `pip`
-
+* please install [sigpy](https://github.com/ZhengguoTan/sigpy) if you need to run LLR reconstruction.
 
 ### Installation for Developers
 

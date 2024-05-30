@@ -100,7 +100,10 @@ if __name__ == "__main__":
 
     parser.add_argument('--config', type=str,
                         default='/configs/zsssl.yaml',
-                        help='yaml config file for zsssl')
+                        help='yaml config file for zsssl.')
+
+    parser.add_argument('--slice_idx', type=int, default=-1,
+                        help='which slice to train/test.')
 
     parser.add_argument('--mode', type=str, default='train',
                         choices=('train', 'test'),
@@ -162,6 +165,15 @@ if __name__ == "__main__":
         print('    checkpoint: ', test_conf['checkpoint'])
 
 
+    if args.mode == 'test' and args.slice_idx != -1:
+        data_conf['slice_idx'] = args.slice_idx
+        data_conf['kdat'] = data_conf['kdat'].split('.h5')[0][:-3] + str(args.slice_idx).zfill(3) + '.h5'
+
+        print('> test slice: ', str(args.slice_idx).zfill(3))
+
+        if data_conf['navi'] is not None:
+            data_conf['navi'] = data_conf['navi'].split('.h5')[0][:-3] + str(args.slice_idx).zfill(3) + '.h5'
+
     if args.mode == 'train':
         RECON_DIR = util.set_output_dir(DIR, config_dict)
 
@@ -183,7 +195,7 @@ if __name__ == "__main__":
 
 
     # %%
-    coil4, kdat6, phase_shot, phase_slice, mask = \
+    coil4, kdat6, kdat_scaling, phase_shot, phase_slice, mask = \
         prep.prep_dwi_data(data_file=data_conf['kdat'],
                            navi_file=data_conf['navi'],
                            coil_file=data_conf['coil'],
@@ -392,7 +404,7 @@ if __name__ == "__main__":
             x, _, _, _  = model(sens, kspace, train_mask, lossf_mask, phase_echo, phase_slice)
             x_infer.append(x.detach().cpu().numpy())
 
-    x_infer = np.array(x_infer)
+    x_infer = np.array(x_infer) / kdat_scaling
 
     recon_file = '/zsssl_slice_' + str(data_conf['slice_idx']).zfill(3)
     if args.mode == 'test':

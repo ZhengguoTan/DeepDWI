@@ -86,7 +86,10 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
     # normalize kdat
     if norm_kdat > 0:
         print('> norm_kdat: ', norm_kdat)
-        kdat_prep = norm_kdat * kdat_prep / np.max(np.abs(kdat_prep[:]))
+        kdat_scaling = norm_kdat / np.max(np.abs(kdat_prep[:]))
+        kdat_prep = kdat_prep * kdat_scaling
+    else:
+        kdat_scaling = 1.
 
     N_diff, N_shot, N_coil, _, N_y, N_x = kdat_prep.shape
 
@@ -203,8 +206,8 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
 
             DWI_MUSE = np.array(DWI_MUSE)
 
-        return coil2, kdat_prep, dwi_shot_phase, sms_phase, mask, DWI_MUSE
+        return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask, DWI_MUSE
 
     else:
 
-        return coil2, kdat_prep, dwi_shot_phase, sms_phase, mask
+        return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask

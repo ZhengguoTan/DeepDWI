@@ -12,12 +12,12 @@ HOME_DIR = DIR.rsplit('/', 1)[0].rsplit('/', 1)[0]
 print('> HOME: ', HOME_DIR)
 
 # %% load images
-f = h5py.File(DIR + '/llr_regu.h5', 'r')
-DWI_MUSE = f['MUSE'][:]
+f = h5py.File(DIR + '/llr_regu_shot-retro-2.h5', 'r')  # TODO:
 DWI_LLR = np.squeeze(f['LLR'][:])
 f.close()
 
-f = h5py.File(DIR + '/vae_regu.h5', 'r')
+f = h5py.File(DIR + '/vae_regu_shot-retro-2.h5', 'r')
+DWI_MUSE = f['MUSE'][:]
 DWI_VAE = np.squeeze(f['VAE'][:])
 f.close()
 
@@ -26,7 +26,7 @@ print('> LLR shape: ', DWI_LLR.shape)
 print('> VAE shape: ', DWI_VAE.shape)
 
 # read in zsssl
-with open(DIR + '/config_zsssl.yaml', 'r') as f:
+with open(DIR + '/config_zsssl_shot-retro-2.yaml', 'r') as f:
     config_dict = yaml.load(f, Loader=yaml.FullLoader)
 
 test_conf = config_dict.get('test', {})
@@ -36,7 +36,7 @@ ZSSSL_DIR = checkpoint_dir.rsplit('/', 1)[0]
 data_conf = config_dict.get('data', {})
 slice_idx = data_conf['slice_idx']
 
-f = h5py.File(HOME_DIR + ZSSSL_DIR + '/zsssl_slice_' + str(slice_idx).zfill(3) + '.h5')
+f = h5py.File(HOME_DIR + ZSSSL_DIR + '/zsssl_slice_' + str(slice_idx).zfill(3) + '_test_shot-retro-2.h5')
 DWI_ZSSSL = np.squeeze(f['ZS'][:])
 f.close()
 
@@ -91,8 +91,8 @@ for m in range(N_row):
             ax[m,n].set_ylabel(str(diff_idx[m]) + '. diffusion direction',
                                fontsize=16)
 
-# plt.suptitle('1.0 mm ISO 4-shot fully-sampled iEPI', fontsize=16, fontweight='bold')
+# plt.suptitle('1.0 mm ISO retrospectively 2-shot undersampled iEPI', fontsize=16, fontweight='bold')
 plt.subplots_adjust(wspace=0, hspace=0.01)
-plt.savefig(DIR + '/regularizations.png',
+plt.savefig(DIR + '/regularizations_shot-retro-2.png',
             bbox_inches='tight', pad_inches=0.05, dpi=300)
 plt.close()

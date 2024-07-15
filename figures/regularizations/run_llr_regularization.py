@@ -59,7 +59,7 @@ args = parser.parse_args()
 
 # %% MUSE reconstruction
 print('>>> MUSE reconstruction ...')
-coil4, kdat6, phase_shot, phase_slice, mask, DWI_MUSE = \
+coil4, kdat6, kdat_scaling, phase_shot, phase_slice, mask, DWI_MUSE = \
     prep.prep_dwi_data(data_file=data_conf['kdat'],
                        navi_file=data_conf['navi'],
                        coil_file=data_conf['coil'],

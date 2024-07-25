@@ -1,7 +1,11 @@
 #!/bin/bash
 
 declare -a SVG_MAIN_FILE=(
-    models/model_vae  # 1
+    models/model_vae                 # 1
+	regularizations/regularizations  # 2
+	motion/motion                    # 3
+	motion/motion2                   # 4
+	motion_self/motion_self          # 5
 )
 
 ARR_LEN=${#SVG_MAIN_FILE[@]}

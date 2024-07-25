@@ -47,8 +47,8 @@ fig_size = fig.get_size_inches()
 fig_width = fig_size[0]
 fontsize = fontsize * (fig_width / 6)
 
-diff_idx_motion0 = 18
-diff_idx_motion1 =  5
+diff_idx_motion0 = 19
+diff_idx_motion1 = 11
 
 ax0 = subfigs[0].subplots(2, 3)
 ax1 = subfigs[1].subplots(2, 3)

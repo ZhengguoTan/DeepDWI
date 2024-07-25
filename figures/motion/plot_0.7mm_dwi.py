@@ -21,23 +21,24 @@ for met in ['jets', 'ss']:
 
     # %% read in dwi
     if met == 'jets':
-        recon_list = [DATA_DIR + '/0.7mm_21-dir_R2x2_JETS_PHASE-IMAG_slice_000.h5',
-                      DATA_DIR + '/0.7mm_21-dir_R2x2_JETS_PHASE-NAVI_slice_000.h5']
+        recon_list = [
+            DATA_DIR + '/0.7mm_21-dir_R2x2_JETS_PHASE-NAVI_slice_000.h5',
+            DATA_DIR + '/0.7mm_21-dir_R2x2_JETS_PHASE-IMAG_slice_000.h5']
 
         key = 'dwi_comb_jets'
 
     elif met == 'ss':
-        recon_list = [HOME_DIR + '/examples/2024-03-16_zsssl_0.7mm_21-dir_R2x2_kdat_slice_000_norm-kdat-1.0_self_ResNet2D_ResBlock-12_kernel-3_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_slice_000.h5',
-                      HOME_DIR + '/examples/2024-03-16_zsssl_0.7mm_21-dir_R2x2_kdat_slice_000_norm-kdat-1.0_navi_ResNet2D_ResBlock-12_kernel-3_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_slice_000.h5']
+        recon_list = [HOME_DIR + '/examples/2024-05-22_zsssl_0.7mm_21-dir_R2x2_vol1_scan1_kdat_slice_040_norm-kdat-1.0_navi_ResNet2D_ResBlock-12_kernel-3_ADMM_08_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_slice_000_test_shot-retro-0.h5',
+                      HOME_DIR + '/examples/2024-05-23_zsssl_0.7mm_21-dir_R2x2_vol1_scan1_kdat_slice_040_norm-kdat-1.0_self_ResNet2D_ResBlock-12_kernel-3_ADMM_08_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_slice_000_test_shot-retro-0.h5']
 
         key = 'ZS'
 
 
-    f = h5py.File(recon_list[0], 'r')
+    f = h5py.File(recon_list[1], 'r')
     DWI_IMAG = np.squeeze(f[key][:])
     f.close()
 
-    f = h5py.File(recon_list[1], 'r')
+    f = h5py.File(recon_list[0], 'r')
     DWI_NAVI = np.squeeze(f[key][:])
     f.close()
 
@@ -46,7 +47,7 @@ for met in ['jets', 'ss']:
 
     N_diff, N_z, N_y, N_x = DWI_NAVI.shape
 
-    # %%
+    # %% axial
     N_row = 2
     N_col = 4
 
@@ -61,8 +62,8 @@ for met in ['jets', 'ss']:
 
     vmax = np.amax(abs(DWI_NAVI)) * 0.08
 
-    diff_idx_motion0 = 18
-    diff_idx_motion1 =  5
+    diff_idx_motion0 = 19
+    diff_idx_motion1 = 11
 
     ax0 = subfigs[0].subplots(2, 2)
     ax1 = subfigs[1].subplots(2, 2)

@@ -74,6 +74,6 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 
 ## TODO:
 
-* add VAE examples
+* upload data to zenodo
 * add transformer and diffusion models
 * use sphinx to create documentation

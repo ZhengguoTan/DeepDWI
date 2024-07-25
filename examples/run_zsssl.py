@@ -109,6 +109,10 @@ if __name__ == "__main__":
                         choices=('train', 'test'),
                         help="perform 'train' or 'test' of the zsssl model.")
 
+    parser.add_argument('--N_shot_retro', type=int,
+                        default=0,
+                        help='retro. undersample the number of shots')
+
     args = parser.parse_args()
 
 
@@ -128,7 +132,7 @@ if __name__ == "__main__":
     print('    train_rho: ', data_conf['train_rho'])
     print('    repeats: ', data_conf['repeats'])
     print('    batch_size: ', data_conf['batch_size'])
-    print('    N_shot_retro: ', data_conf['N_shot_retro'])
+    print('    N_shot_retro: ', args.N_shot_retro)
     print('    N_diff_retro: ', data_conf['N_diff_retro'])
 
     model_conf = config_dict.get('model', {})
@@ -201,7 +205,7 @@ if __name__ == "__main__":
                            coil_file=data_conf['coil'],
                            slice_idx=data_conf['slice_idx'],
                            norm_kdat=data_conf['normalize_kdat'],
-                           N_shot_retro=data_conf['N_shot_retro'],
+                           N_shot_retro=args.N_shot_retro,
                            N_diff_retro=data_conf['N_diff_retro'])
 
     mask, train_mask, lossf_mask, valid_mask = \
@@ -408,7 +412,7 @@ if __name__ == "__main__":
 
     recon_file = '/zsssl_slice_' + str(data_conf['slice_idx']).zfill(3)
     if args.mode == 'test':
-        recon_file += '_test_shot-retro-' + str(data_conf['N_shot_retro'])
+        recon_file += '_test_shot-retro-' + str(args.N_shot_retro)
 
     f = h5py.File(RECON_DIR + recon_file + '.h5', 'w')
     f.create_dataset('ZS', data=x_infer)

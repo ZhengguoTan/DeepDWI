@@ -49,7 +49,8 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
                   slice_idx: int = 0,
                   norm_kdat: float = 1.0,
                   N_shot_retro: int = 0,
-                  N_diff_retro: int = 0,
+                  N_diff_split: int = 1,
+                  N_diff_split_index: int = 0,
                   return_muse: bool = False):
 
     # %%
@@ -80,8 +81,11 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
     if N_shot_retro > 0:
         kdat_prep = retro_usamp_shot(kdat_prep, N_shot_retro)
 
-    if N_diff_retro > 0 and N_diff_retro < N_diff:
-        kdat_prep = kdat_prep[:N_diff_retro, ...]
+    if N_diff_split > 1:
+        N_diff_sub = N_diff // N_diff_split
+        diff_idx = range(N_diff_split_index * N_diff_sub,
+                         (N_diff_split_index+1) * N_diff_sub if N_diff_split_index < N_diff_split else N_diff)
+        kdat_prep = kdat_prep[diff_idx, ...]
 
     # normalize kdat
     if norm_kdat > 0:

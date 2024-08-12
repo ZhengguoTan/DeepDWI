@@ -17,13 +17,13 @@ DWI_MUSE = f['MUSE'][:]
 DWI_LLR = np.squeeze(f['LLR'][:])
 f.close()
 
-f = h5py.File(DIR + '/vae_regu.h5', 'r')
-DWI_VAE = np.squeeze(f['VAE'][:])
-f.close()
+# f = h5py.File(DIR + '/vae_regu.h5', 'r')
+# DWI_VAE = np.squeeze(f['VAE'][:])
+# f.close()
 
 print('> MUSE shape: ', DWI_MUSE.shape)
 print('> LLR shape: ', DWI_LLR.shape)
-print('> VAE shape: ', DWI_VAE.shape)
+# print('> VAE shape: ', DWI_VAE.shape)
 
 # read in zsssl
 with open(DIR + '/config_zsssl.yaml', 'r') as f:
@@ -52,7 +52,7 @@ def normalize_image(input):
 
 # %% plot
 diff_idx = [2, 18]
-disp_order = ['MUSE', 'LLR', 'VAE', 'ZSSSL']
+disp_order = ['MUSE', 'LLR', 'ZSSSL']
 
 N_row = len(diff_idx)
 N_col = len(disp_order)
@@ -70,8 +70,8 @@ for m in range(N_row):
             disp_image = normalize_image(DWI_MUSE[diff_idx[m], slice_idx])
         elif disp_order[n] == 'LLR':
             disp_image = normalize_image(DWI_LLR[diff_idx[m], slice_idx])
-        elif disp_order[n] == 'VAE':
-            disp_image = normalize_image(DWI_VAE[diff_idx[m], slice_idx])
+        # elif disp_order[n] == 'VAE':
+        #     disp_image = normalize_image(DWI_VAE[diff_idx[m], slice_idx])
         elif disp_order[n] == 'ZSSSL':
             disp_image = normalize_image(DWI_ZSSSL[diff_idx[m], slice_idx])
 

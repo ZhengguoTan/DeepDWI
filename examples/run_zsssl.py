@@ -50,11 +50,11 @@ def prep_mask(mask: np.ndarray, N_repeats: int = 12,
     train_mask = torch.stack(train_mask)
     lossf_mask = torch.stack(lossf_mask)
 
-    # f = h5py.File(DIR + '/mask.h5', 'w')
-    # f.create_dataset('train', data=train_mask.detach().cpu().numpy())
-    # f.create_dataset('lossf', data=lossf_mask.detach().cpu().numpy())
-    # f.create_dataset('valid', data=valid_mask.detach().cpu().numpy())
-    # f.close()
+    f = h5py.File(DIR + '/mask.h5', 'w')
+    f.create_dataset('train', data=train_mask.detach().cpu().numpy())
+    f.create_dataset('lossf', data=lossf_mask.detach().cpu().numpy())
+    f.create_dataset('valid', data=valid_mask.detach().cpu().numpy())
+    f.close()
 
     return mask, train_mask, lossf_mask, valid_mask
 
@@ -133,7 +133,8 @@ if __name__ == "__main__":
     print('    repeats: ', data_conf['repeats'])
     print('    batch_size: ', data_conf['batch_size'])
     print('    N_shot_retro: ', args.N_shot_retro)
-    print('    N_diff_retro: ', data_conf['N_diff_retro'])
+    print('    N_diff_split: ', data_conf['N_diff_split'])
+    print('    N_diff_split_index: ', data_conf['N_diff_split_index'])
 
     model_conf = config_dict.get('model', {})
     print('> model_conf: ')
@@ -206,7 +207,8 @@ if __name__ == "__main__":
                            slice_idx=data_conf['slice_idx'],
                            norm_kdat=data_conf['normalize_kdat'],
                            N_shot_retro=args.N_shot_retro,
-                           N_diff_retro=data_conf['N_diff_retro'])
+                           N_diff_split=data_conf['N_diff_split'],
+                           N_diff_split_index=data_conf['N_diff_split_index'])
 
     mask, train_mask, lossf_mask, valid_mask = \
         prep_mask(mask, N_repeats=data_conf['repeats'],
@@ -325,9 +327,9 @@ if __name__ == "__main__":
             scheduler.step()
 
             epoch_x = torch.stack(epoch_x)
-            f = h5py.File(RECON_DIR + '/zsssl_epoch_' + str(epoch).zfill(3) + '.h5', 'w')
-            f.create_dataset('DWI', data=epoch_x.detach().cpu().numpy())
-            f.close()
+            # f = h5py.File(RECON_DIR + '/zsssl_epoch_' + str(epoch).zfill(3) + '.h5', 'w')
+            # f.create_dataset('DWI', data=epoch_x.detach().cpu().numpy())
+            # f.close()
 
             # --- valid ---
             with torch.no_grad():

@@ -3,9 +3,11 @@
 declare -a SVG_MAIN_FILE=(
     models/model_vae                 # 1
 	regularizations/regularizations  # 2
-	motion/motion                    # 3
-	motion/motion2                   # 4
-	motion_self/motion_self          # 5
+	b3000/b3000                      # 3
+	convergence/convergence          # 4
+	motion/motion                    # 5
+	motion/motion2                   # 6
+	motion_self/motion_self          # 7
 )
 
 ARR_LEN=${#SVG_MAIN_FILE[@]}

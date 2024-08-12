@@ -12,10 +12,15 @@ data:
   # slice_idx: 0
   # coil: /data/1.0mm_126-dir_R3x3_coils.h5
   # # #
-  kdat: /data/0.7mm_21-dir_R2x2_vol2_scan1_kdat_slice_000.h5
-  navi: null  # /data/0.7mm_21-dir_R2x2_navi_slice_000.h5
+  # kdat: /data/0.7mm_21-dir_R2x2_vol2_scan2_kdat_slice_000.h5
+  # navi: null
+  # slice_idx: 0
+  # coil: /data/0.7mm_21-dir_R2x2_vol2_scan2_coils.h5
+  # # #
+  kdat: /data/1.0mm_126-dir_R3x3_kdat_slice_000.h5
+  navi: null
   slice_idx: 0
-  coil: /data/0.7mm_21-dir_R2x2_vol2_scan1_coils.h5
+  coil: /data/1.0mm_126-dir_R3x3_coils.h5
   # # #
   # kdat: /data/0.5x0.5x2.0mm_R3x2_kdat_slice_000_pat.h5
   # navi: /data/0.5x0.5x2.0mm_R3x2_navi_slice_000_pat.h5
@@ -27,7 +32,8 @@ data:
   repeats: 15
   batch_size: 1
   N_shot_retro: 0
-  N_diff_retro: 42
+  N_diff_split: 3
+  N_diff_split_index: 0
 
 model:
   net: ResNet2D
@@ -56,4 +62,4 @@ learn:
   valid_loss_tracker: 12
 
 test: # only used when in the 'test' mode
-  checkpoint: /examples/2024-04-17_zsssl_0.7mm_21-dir_R2x2_vol2_scan1_kdat_slice_040_norm-kdat-1.0_self_ResNet2D_ResBlock-12_kernel-3_ADMM_08_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_best.pth
+  checkpoint: /examples/2024-08-07_zsssl_1.0mm_126-dir_R3x3_kdat_slice_000_norm-kdat-1.0_self_ResNet2D_ResBlock-12_kernel-3_ADMM_08_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_best.pth

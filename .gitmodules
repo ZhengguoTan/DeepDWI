@@ -4,3 +4,6 @@
 [submodule "figures/models/plot_nn"]
 	path = figures/models/plot_nn
 	url = https://github.com/ZhengguoTan/plot_nn.git
+[submodule "figures/models/plot_zsssl"]
+	path = figures/models/plot_zsssl
+	url = https://github.com/ZhengguoTan/plot_zsssl.git

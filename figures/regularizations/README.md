@@ -1,7 +1,7 @@
 # This folder creates figures for regularzations:
 
 * Locally Low Rank (LLR)
-* Variatinal AutoEncoder (VAE)
+<!-- * Variatinal AutoEncoder (VAE) -->
 * Zero-Shot Self-Supervised Learning (ZSSSL)
 
 ## setup the directory of the `DeepDWI` folder in the terminal:
@@ -25,7 +25,7 @@ python run_llr_regularization.py
 python run_llr_regularization.py --N_shot_retro 2
 ```
 
-## 2. run the reconstruction with the learned VAE model as regularization:
+<!-- ## 2. run the reconstruction with the learned VAE model as regularization:
 
 #### (a) 4-shot fully-sampled data
 
@@ -37,9 +37,9 @@ python run_vae_regularization.py
 
 ```bash
 python run_vae_regularization.py --N_shot_retro 2
-```
+``` -->
 
-## 3. run ZSSSL
+## 2. run ZSSSL
 
 #### (a) training and testing on 4-shot fully-sampled data
 

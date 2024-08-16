@@ -170,7 +170,7 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
 
         _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=5)
 
-        if navi_prep is not None:
+        if navi_prep is not None:  # IMPORTANT
             dwi_shot_phase = np.conj(dwi_shot_phase)
 
     else:

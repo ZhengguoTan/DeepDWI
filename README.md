@@ -43,6 +43,8 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 
 ## References
 
+### Subspace Modeling and Reconstruction
+
 * Liang ZP. [Spatiotemporal imaging with partially separable functions](https://doi.org/10.1109/ISBI.2007.357020). Proc IEEE Int Symp Biomed Imaging 2007;4:988-991.
 
 * Doneva M, Börnert P, Eggers H, Stehning C, Sénégas J, Mertins A. [Compressed sensing reconstruction for magnetic resonance parameter mapping](https://doi.org/10.1002/mrm.22483). Magn Reson Med 2010;64:1114-1120.
@@ -71,6 +73,9 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 
 * Heydari A, Ahmadi A, Kim TH, Bilgic B. [Joint MAPLE: Accelerated joint T1 and T2* mapping with scan-specific self-supervised networks](https://doi.org/10.1002/mrm.29989). Magn Reson Med 2024.
 
+### Diffusion-Weighted Imaging
+
+* Mori S. [Introduction to Diffusion Tensor Imaging](https://www.sciencedirect.com/book/9780444528285/introduction-to-diffusion-tensor-imaging). 2007.
 
 ## TODO:
 

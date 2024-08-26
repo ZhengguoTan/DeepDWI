@@ -63,7 +63,7 @@ for met in ['jets', 'ss']:
     vmax = np.amax(abs(DWI_NAVI)) * 0.08
 
     diff_idx_motion0 = 19
-    diff_idx_motion1 = 11
+    diff_idx_motion1 =  5
 
     ax0 = subfigs[0].subplots(2, 2)
     ax1 = subfigs[1].subplots(2, 2)

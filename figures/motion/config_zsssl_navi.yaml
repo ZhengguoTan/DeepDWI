@@ -10,7 +10,8 @@ data:
   repeats: 15
   batch_size: 1
   N_shot_retro: 0
-  N_diff_retro: 42
+  N_diff_split: 1
+  N_diff_split_index: 0
 model:
   net: ResNet2D
   N_residual_block: 12

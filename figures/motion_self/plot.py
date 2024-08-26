@@ -19,13 +19,13 @@ for met in ['muse', 'jets', 'zsssl']:
 
     if met == 'muse':
         f = h5py.File('/home/atuin/b143dc/b143dc15/Experiments/2024-06-10_Terra_Diffusion_iEPI/meas_MID00329_FID25293_ep2d_diff_ms_mddw_0_7mm_self/MUSE_PHASE-IMAG-REDU.h5', 'r')
-    
+
     elif met == 'jets':
         f = h5py.File('/home/atuin/b143dc/b143dc15/Experiments/2024-06-10_Terra_Diffusion_iEPI/meas_MID00329_FID25293_ep2d_diff_ms_mddw_0_7mm_self/JETS_PHASE-IMAG-REDU.h5', 'r')
-    
+
     elif met == 'zsssl':
         f = h5py.File('/home/atuin/b143dc/b143dc15/Softwares/DeepDWI/examples/2024-06-14_zsssl_0.7mm_21-dir_R2x2_vol2_scan2_kdat_slice_040_norm-kdat-1.0_self_ResNet2D_ResBlock-12_kernel-3_ADMM_08_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_test_shot-retro-0.h5', 'r')
-    
+
     DWI = f['DWI'][:]
     f.close()
 
@@ -48,32 +48,52 @@ for met in ['muse', 'jets', 'zsssl']:
     ax.append(fig.add_subplot(gs[0,1]))
     ax.append(fig.add_subplot(gs[1,1]))
 
-    diff_idx = 11
+    diff_idx = 15
 
     # axial
     tra_slice_idx = 109
     img = np.flip(abs(DWI[diff_idx, tra_slice_idx, :, :]), axis=(-2))
     ax[0].imshow(img, cmap='gray',
-                 interpolation=None, vmin=0, vmax=np.amax(img)*0.4)
+                 interpolation=None, vmin=0, vmax=np.amax(img)*0.25)
+
+    ax[0].annotate("", xy=(0.60*N_x, 0.65*N_y), xytext=(0.70*N_x, 0.60*N_y),
+                   arrowprops=dict(arrowstyle="->", color='r', linewidth=3,
+                                   mutation_scale=15))
+
+    ax[0].annotate("", xy=(0.36*N_x, 0.38*N_y), xytext=(0.26*N_x, 0.43*N_y),
+                   arrowprops=dict(arrowstyle="->", color='r', linewidth=3,
+                                   mutation_scale=15))
 
     # coronal
     cor_slice_idx = 124
     img = np.flip(abs(DWI[diff_idx, (N_z - int(N_x/2)):, cor_slice_idx, :]), axis=(-2))
     ax[1].imshow(img, cmap='gray',
-                 interpolation=None, vmin=0, vmax=np.amax(img)*0.4)
+                 interpolation=None, vmin=0, vmax=np.amax(img)*0.40)
+
+    ax[1].annotate("", xy=(0.72*N_x, 0.28*N_x/2), xytext=(0.72*N_x, 0.08*N_x/2),
+                   arrowprops=dict(arrowstyle="->", color='b', linewidth=3,
+                                   mutation_scale=15))
+
+    ax[1].annotate("", xy=(0.55*N_x, 0.47*N_x/2), xytext=(0.65*N_x, 0.47*N_x/2),
+                   arrowprops=dict(arrowstyle="->", color='b', linewidth=3,
+                                   mutation_scale=15))
 
     # sagittal
     sag_slice_idx = 150
     img = np.flip(abs(DWI[diff_idx, (N_z - int(N_x/2)):, :, sag_slice_idx]), axis=(-2))
 
     ax[2].imshow(img, cmap='gray',
-                 interpolation=None, vmin=0, vmax=np.amax(img)*0.4)
+                 interpolation=None, vmin=0, vmax=np.amax(img)*0.30)
+
+    ax[2].annotate("", xy=(0.50*N_x, 0.35*N_x/2), xytext=(0.50*N_x, 0.15*N_x/2),
+                   arrowprops=dict(arrowstyle="->", color='b', linewidth=3,
+                                   mutation_scale=15))
 
 
     for n in range(3):
         ax[n].axes.xaxis.set_ticks([])
         ax[n].axes.yaxis.set_ticks([])
-    
+
 
     if met == 'muse':
         ax[0].text(0.02*N_x, 0.06*N_x, 'Axial', bbox=props,

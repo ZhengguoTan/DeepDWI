@@ -21,6 +21,6 @@ module load python/3.9-anaconda
 eval "$(conda shell.bash hook)"
 conda activate deepdwi
 
-# python ../../examples/run_zsssl.py --config /figures/motion/config_zsssl_self.yaml --mode train
+bash train.sh
 
 bash test.sh

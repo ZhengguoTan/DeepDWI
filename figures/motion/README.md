@@ -1,7 +1,6 @@
 # This folder creates figures for regularzations:
 
 * Locally Low Rank (LLR)
-* Variatinal AutoEncoder (VAE)
 * Zero-Shot Self-Supervised Learning (ZSSSL)
 
 ## 0. setup the directory of the `DeepDWI` folder in the terminal:
@@ -25,25 +24,21 @@ python run_vae_regularization.py
 
 ## 3. run ZSSSL
 
-### train:
-
 ```bash
-python ../../examples/run_zsssl.py --config /figures/motion/config_zsssl_navi.yaml --mode train
-python ../../examples/run_zsssl.py --config /figures/motion/config_zsssl_navi.yaml --mode train
-```
-
-### test:
-
-```bash
-bash test.sh
+sbatch sbatch_zsssl.sh
 ```
 
 ## 4. plot results
 
 ```bash
-python plot.py
+python plot_0.7mm_tra.py
+python plot_0.7mm_cor_sag.py
 ```
 
-<!-- <p align="center">
-  <img alt="Light" src="regularizations.png" width="100%">
-</p> -->
+<p align="center">
+  <img alt="Light" src="0.7mm_dwi_tra.png" width="100%">
+</p>
+
+<p align="center">
+  <img alt="Light" src="0.7mm_dwi_cor_sag.png" width="100%">
+</p>

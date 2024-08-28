@@ -1,6 +1,8 @@
 # ignore *.h5 files
 *.h5
 
+examples/
+
 # ignore slurm output files
 *.out
 

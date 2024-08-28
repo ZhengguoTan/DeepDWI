@@ -80,4 +80,5 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 ## TODO:
 
 * add transformer and diffusion models
+* add show-case recon results in README
 * use sphinx to create documentation

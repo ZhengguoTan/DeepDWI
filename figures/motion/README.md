@@ -34,7 +34,7 @@ python comb_slice.py --dir data --method_pre 0.7mm_21-dir_R2x2_vol1_scan1_JETS_P
 sbatch sbatch_zsssl.sh
 ```
 
-## 2.2. combine slices
+### 2.2. combine slices
 
 ```bash
 cd ${DWIDIR}/examples

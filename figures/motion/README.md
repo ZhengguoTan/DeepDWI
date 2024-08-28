@@ -16,29 +16,34 @@ cd ${DWIDIR}/figures/motion
 python run_llr_regularization.py
 ```
 
-## 2. run the reconstruction with the learned VAE model as regularization:
-
-```bash
-python run_vae_regularization.py
-```
-
 ## 3. run ZSSSL
 
 ```bash
 sbatch sbatch_zsssl.sh
 ```
 
-## 4. plot results
+## 4. combine slices
+
+```bash
+cd ${DWIDIR}/examples
+
+python comb_slice.py --dir 2024-05-22_zsssl_0.7mm_21-dir_R2x2_vol1_scan1_kdat_slice_040_norm-kdat-1.0_navi_ResNet2D_ResBlock-12_kernel-3_ADMM_08_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss --method_pre zsssl --method_post _test_shot-retro-0 --key ZS --MB 2 --slices 88
+
+python comb_slice.py --dir 2024-05-23_zsssl_0.7mm_21-dir_R2x2_vol1_scan1_kdat_slice_040_norm-kdat-1.0_self_ResNet2D_ResBlock-12_kernel-3_ADMM_08_lamda-0.050_Adam_lr-0.000500_MixL1L2Loss --method_pre zsssl --method_post _test_shot-retro-0 --key ZS --MB 2 --slices 88
+```
+
+## 5. plot results
 
 ```bash
 python plot_0.7mm_tra.py
-python plot_0.7mm_cor_sag.py
 ```
-
 <p align="center">
   <img alt="Light" src="0.7mm_dwi_tra.png" width="100%">
 </p>
 
+```bash
+python plot_0.7mm_cor_sag.py
+```
 <p align="center">
   <img alt="Light" src="0.7mm_dwi_cor_sag.png" width="100%">
 </p>

@@ -113,6 +113,9 @@ if __name__ == "__main__":
                         default=0,
                         help='retro. undersample the number of shots')
 
+    parser.add_argument('--checkpoint', type=str, default='',
+                        help="specify the checkpoint to be used in testing.")
+
     args = parser.parse_args()
 
 
@@ -167,7 +170,7 @@ if __name__ == "__main__":
     test_conf = config_dict['test']
     if args.mode == 'test':
         print('> test_conf: ')
-        print('    checkpoint: ', test_conf['checkpoint'])
+        print('    checkpoint: ', args.checkpoint)
 
 
     if args.mode == 'test' and args.slice_idx != -1:
@@ -186,7 +189,7 @@ if __name__ == "__main__":
 
     elif args.mode == 'test':
 
-        relative_path = test_conf['checkpoint'].rsplit('/', 1)[0]
+        relative_path = args.checkpoint.rsplit('/', 1)[0]
         RECON_DIR = HOME_DIR + relative_path
 
         yaml_file = 'zsssl_slice_' + str(data_conf['slice_idx']).zfill(3) + '.yaml'
@@ -386,7 +389,7 @@ if __name__ == "__main__":
     if args.mode == 'train':
         best_checkpoint = torch.load(os.path.join(RECON_DIR, checkpoint_name))
     else:
-        best_checkpoint = torch.load(HOME_DIR + test_conf['checkpoint'])
+        best_checkpoint = torch.load(HOME_DIR + args.checkpoint)
 
     best_epoch = best_checkpoint['epoch']
     print('> loaded best checkpoint at the ' + str(best_epoch+1).zfill(3) + 'th epoch')

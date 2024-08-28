@@ -21,6 +21,6 @@ conda activate sigpy
 
 
 # 1.0 mm - 126 dir
-# python run_llr.py --prefix 1.0mm_126-dir_R3x3_ --slice_idx 0 --slice_inc 38 --muse
+# python ../../examples/run_llr.py --prefix 1.0mm_126-dir_R3x3_ --slice_idx 0 --slice_inc 38 --muse
 
-python run_llr.py --prefix 1.0mm_126-dir_R3x3 --slice_idx 0 --slice_inc 38 --jets --split 3 --admm_lamda 0.002 --admm_rho 0.05
+python ../../examples/run_llr.py --prefix 1.0mm_126-dir_R3x3 --slice_idx 0 --slice_inc 1 --jets --split 3 --admm_lamda 0.002 --admm_rho 0.05

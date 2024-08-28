@@ -9,14 +9,12 @@ cd ${DWIDIR}/figures/b3000
 
 ## 1. run the reconstruction with the LLR regularization:
 
-<!-- TODO: -->
 ```bash
 sbatch sbatch_llr.sh  # SLOW! This would take days!
 ```
 
 ## 2. run the zsssl training and reconstruction:
 
-<!-- TODO: -->
 ```bash
 sbatch sbatch_zsssl.sh
 ```

@@ -12,7 +12,6 @@ from os.path import exists
 DIR = os.path.dirname(os.path.realpath(__file__))
 
 HOME_DIR = DIR.rsplit('/', 1)[0]
-HOME_DIR = HOME_DIR.rsplit('/', 1)[0]
 print('> HOME: ', HOME_DIR)
 
 DATA_DIR = HOME_DIR + '/data/'

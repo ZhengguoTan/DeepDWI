@@ -47,10 +47,10 @@ python comb_slice.py --dir 2024-05-23_zsssl_0.7mm_21-dir_R2x2_vol1_scan1_kdat_sl
 ## 3. plot results
 
 ```bash
-python plot_0.7mm_tra.py
+python plot_0.7mm_tra_4.py
 ```
 <p align="center">
-  <img alt="Light" src="0.7mm_dwi_tra.png" width="100%">
+  <img alt="Light" src="0.7mm_dwi_tra_4.png" width="100%">
 </p>
 
 ```bash

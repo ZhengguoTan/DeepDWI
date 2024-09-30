@@ -3,8 +3,8 @@
 
 <svg
    width="84.666664mm"
-   height="46.274433mm"
-   viewBox="0 0 84.666662 46.274434"
+   height="56.955967mm"
+   viewBox="0 0 84.666662 56.955968"
    version="1.1"
    id="svg1"
    xml:space="preserve"
@@ -45,9 +45,9 @@
      id="layer1"
      transform="translate(-56.492405,-95.018707)"><image
        width="84.666664"
-       height="46.274433"
+       height="56.955967"
        preserveAspectRatio="none"
-       xlink:href="0.7mm_dwi_tra.png"
+       xlink:href="0.7mm_dwi_tra_4.png"
        id="image415"
        x="56.492405"
        y="95.018707" /></g></svg>

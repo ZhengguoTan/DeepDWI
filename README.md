@@ -45,7 +45,7 @@ That's it! Enjoy `deepdwi`!
 
 ## Features
 
-1. The repo implements several state-of-the-art [algorithm unrolling](https://doi.org/10.1109/MSP.2020.3016905) for high-dimensional diffusion-weighted imaging reconstruction, incl.
+1. The repo implements several state-of-the-art [algorithm unrolling](https://doi.org/10.1109/MSP.2020.3016905) for high-resolution high-dimensional diffusion-weighted imaging reconstruction, incl.
 
     (1) Variational Network ([VarNet](https://doi.org/10.1002/mrm.26977));
 
@@ -69,6 +69,8 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 
 ## Examples
 
+### General Example
+
 1. load the data
 
     ```bash
@@ -91,6 +93,10 @@ Before running the scripts in `DeepDWI`, you need to download the following data
     ```bash
     python run_zsssl.py --mode test --slice_idx 0 --checkpoint /examples/path/to/zsssl_best.pth
     ```
+
+### Specific Examples
+
+* Please follow the sub-folders in [figures](figures/) for specific experiments and examples.
 
 ## References
 

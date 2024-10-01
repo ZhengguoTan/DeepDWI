@@ -112,3 +112,14 @@ If you find the open-source codes/data useful, please cite:
     Pages     = {},
     doi       = {}
 }
+
+@Article{tan_2024_diff7t,
+    Title     = {{Accelerated Diffusion Weighted Magnetic Resonance Imaging at 7 T: Joint Reconstruction for Shift-Encoded Navigator-based Interleaved Echo Planar Imaging (JETS-NAViEPI)}},
+    Author    = {Tan, Zhengguo and Liebig, Patrick A and Heidemann, Robin M and Laun, Frederik B and Knoll, Florian},
+    Journal   = {Imaging Neuroscience},
+    Year      = {2024},
+    Volume    = {2},
+    Pages     = {1-15},
+    doi       = {10.1162/imag_a_00085}
+}
+```

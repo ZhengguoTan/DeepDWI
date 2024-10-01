@@ -69,12 +69,28 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 
 ## Examples
 
-### 1. load the data
+1. load the data
 
+    ```bash
+    cd data/
 
+    python load.py --records 10781347 --file 0.7mm_21-dir_R2x2_kdat_slice_000.h5
 
-### 2. run the zsssl training
+    python load.py --records 10781347 --file 0.7mm_21-dir_R2x2_coils.h5
+    ```
 
+2. run the zsssl training
+
+    ```bash
+    cd examples/
+    python run_zsssl.py --mode train
+    ```
+
+3. run the zsssl testing
+
+    ```bash
+    python run_zsssl.py --mode test --slice_idx 0 --checkpoint /examples/path/to/zsssl_best.pth
+    ```
 
 ## References
 

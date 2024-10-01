@@ -2,33 +2,58 @@
 
 ## Introduction
 
-In the world of [PyTorch](https://pytorch.org/), deep learning reconstruction for magnetic resonance imaging consists of these ingredients:
+DeepDWI implements self-supervised learning image reconstruction techniques for DWI.
 
-* **Dataset**, inherited from `torch.utils.data.Dataset`,
-* **DataLoader**, inherited from `torch.utils.data.DataLoader`,
-* **Model**, inherited from `torch.nn.Module`, and
-* **Train**, **Validation**, and **Test** stages.
-
-Based on these generic PyTorch structures, DeepDWI implements self-supervised learning image reconstruction techniques for DWI.
+<p align="center">
+  <img alt="Light" src="figures/motion_self/0.7mm_dwi_vol3.png" width="100%">
+  <em>Prospectively self-gated diffusion-weighted image reconstruction on a iEPI data acquired with 0.7 mm isotropic resolution. Displayed images are one axial slice at four different diffusion-encoding directions. Self-gated zero-shot self-supervised learning (ZSSSL) enables much cleaner delineations of diffusion contrasts than locally-low rank (LLR) regularized reconstruction.</em>
+</p>
 
 ## Installation
 
-DeepDWI requires Python version >= 3.10.13.
+### Let's use `conda` to install DeepDWI:
 
-* please follow the instructions to install `cupy`: https://docs.cupy.dev/en/stable/install.html
+1. create a new conda environment named ('deepdwi', you can use other names as you like):
 
-DeepDWI requires [sigpy](https://github.com/ZhengguoTan/sigpy) for the locally low-rank (LLR) reconstruction.
+    ```bash
+    conda create -n deepdwi python==3.10
+    ```
 
-* please install [sigpy](https://github.com/ZhengguoTan/sigpy) if you need to run LLR reconstruction.
+2. activate the environment:
 
-### Installation for Developers
+    ```bash
+    conda activate deepdwi
+    ```
 
-```
-cd /path/to/DeepDWI
-python -m pip install -e .
-```
+3. install `deepdwi`:
+
+    ```bash
+    python -m pip install -e .
+    ```
+
+4. download and install `sigpy`:
+
+    ```bash
+    git clone https://github.com/ZhengguoTan/sigpy.git
+    ```
+    and then ```cd``` to the sigpy directory,
+    ```bash
+    python -m pip install -e .
+    ```
+
+That's it! Enjoy `deepdwi`!
 
 ## Features
+
+1. The repo implements several state-of-the-art [algorithm unrolling](https://doi.org/10.1109/MSP.2020.3016905) for high-dimensional diffusion-weighted imaging reconstruction, incl.
+
+    (1) Variational Network ([VarNet](https://doi.org/10.1002/mrm.26977));
+
+    (2) Model-based deep learning architecture ([MoDL](https://doi.org/10.1109/TMI.2018.2865356));
+
+    (3) Alternating Direction Method of Multipliers ([ADMM](https://doi.org/10.1561/2200000016)).
+
+* This implementation is also applicable to other **high-dimensional MRI reconstruction**!
 
 
 ## Data
@@ -37,9 +62,19 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 
 | Spatial Resolution (mm3) | Diffusion Mode | Acceleration (in-plane x slice) | Shots | Navigator | Link |
 |---|---|---|---|---|---|
+| 0.7 x 0.7 x 0.7 | MDDW 20 directions with b-value of 1000 s/mm2 | 2 x 2 | 3 | Yes | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10781347.svg)](https://doi.org/10.5281/zenodo.10781347) |
+| 0.7 x 0.7 x 0.7 | MDDW 20 directions with b-value of 1000 s/mm2 | 2 x 2 | 3 | No | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13864504.svg)](https://doi.org/10.5281/zenodo.13864504) |
 | 1.0 x 1.0 x 1.0 | MDDW 20 directions with b-value of 1000 s/mm2 | 1 x 3 | 4 | No  | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10668487.svg)](https://doi.org/10.5281/zenodo.10668487) |
 | 1.0 x 1.0 x 1.0 | 3-shell 126 directions with b-values up to 3000 s/mm2 | 3 x 3 | 2 | No  | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13171692.svg)](https://doi.org/10.5281/zenodo.13171692) |
-| 0.7 x 0.7 x 0.7 | MDDW 20 directions with b-value of 1000 s/mm2 | 2 x 2 | 3 | Yes | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10781347.svg)](https://doi.org/10.5281/zenodo.10781347) |
+
+## Examples
+
+### 1. load the data
+
+
+
+### 2. run the zsssl training
+
 
 ## References
 
@@ -59,6 +94,8 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 
 * Dong Z, Wang F, Chan KS, Reese TG, Bilgic B, Marques JP, Setsompop K. [Variable flip angle echo planar time-resolved imaging (vFA-EPTI) for fast high-resolution gradient echo myelin water imaging](https://doi.org/10.1016/j.neuroimage.2021.117897). NeuroImage 2021;232.
 
+### Deep Learning
+
 * Hammernik K, Klatzer T, Kobler E, Recht MP, Sodickson DK, Pock T, Knoll F. [Learning a variational network for reconstruction of accelerated MRI data](https://doi.org/10.1002/mrm.26977). Magn Reson Med 2018;79:3055-3071.
 
 * Aggarwal HK, Mani MP, Jacob M. [MoDL: Model-Based Deep Learning Architecture for Inverse Problems](https://doi.org/10.1109/TMI.2018.2865356). IEEE Trans Med Imaging 2019;38:394-405.
@@ -76,9 +113,3 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 ### Diffusion-Weighted Imaging
 
 * Mori S. [Introduction to Diffusion Tensor Imaging](https://www.sciencedirect.com/book/9780444528285/introduction-to-diffusion-tensor-imaging). 2007.
-
-## TODO:
-
-* add transformer and diffusion models
-* add show-case recon results in README
-* use sphinx to create documentation

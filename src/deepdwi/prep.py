@@ -13,6 +13,7 @@ from typing import Optional
 DIR = os.path.dirname(os.path.realpath(__file__))
 
 HOME_DIR = DIR.rsplit('/', 1)[0]
+HOME_DIR = HOME_DIR.rsplit('/', 1)[0]
 print('> HOME: ', HOME_DIR)
 
 device_sp = sp.Device(0 if torch.cuda.is_available() else -1)

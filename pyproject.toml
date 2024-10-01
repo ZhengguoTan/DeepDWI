@@ -14,7 +14,18 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-
+    "cupy-cuda12x",
+    "h5py==3.10.0",
+    "matplotlib",
+    "numba==0.58.1",
+    "numpy==1.26.3",
+    "PyWavelets",
+    "PyYaml",
+    "scipy==1.11.4",
+    "tqdm",
+    "torch==2.1.2",
+    "torchaudio==2.1.2",
+    "torchvision==0.16.2"
 ]
 dynamic = [
     "version"

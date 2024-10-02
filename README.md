@@ -58,7 +58,7 @@ That's it! Enjoy `deepdwi`!
 
 ## Data
 
-Before running the scripts in `DeepDWI`, you need to download the following data to the `/data/` folder:
+Before running the scripts in `DeepDWI`, you need to download the following data to the [/data/](data/) folder:
 
 | Spatial Resolution (mm3) | Diffusion Mode | Acceleration (in-plane x slice) | Shots | Navigator | Link |
 |---|---|---|---|---|---|
@@ -96,7 +96,7 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 
 ### Specific Examples
 
-* Please follow the sub-folders in [figures](figures/) for specific experiments and examples.
+* Please follow the sub-folders in [/figures/](figures/) for specific experiments and examples.
 
 ## References
 

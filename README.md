@@ -76,9 +76,11 @@ Before running the scripts in `DeepDWI`, you need to download the following data
     ```bash
     cd data/
 
-    python load.py --records 10781347 --file 0.7mm_21-dir_R2x2_kdat_slice_000.h5
+    python load.py --records 10781347 --file 0.7mm_21-dir_R2x2_md5sum.txt
 
-    python load.py --records 10781347 --file 0.7mm_21-dir_R2x2_coils.h5
+    python load.py --records 10781347 --file 0.7mm_21-dir_R2x2_kdat_slice_000.h5 --md5sum 0.7mm_21-dir_R2x2_md5sum.txt
+
+    python load.py --records 10781347 --file 0.7mm_21-dir_R2x2_coils.h5 --md5sum 0.7mm_21-dir_R2x2_md5sum.txt
     ```
 
 2. run the zsssl training

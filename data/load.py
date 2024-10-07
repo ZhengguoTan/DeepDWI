@@ -16,6 +16,9 @@ parser.add_argument('--file', default=None, type=str,
                         multiple files should be separated with space. \
                             Default is None, i.e. download all files.')
 
+parser.add_argument('--md5sum', default=None, type=str,
+                    help='name of the *md5sum.txt file.')
+
 args = parser.parse_args()
 
 # %% download data
@@ -36,7 +39,8 @@ for f in files_list:
 # check
 os.chdir(DATA_DIR)
 
-for f in files_list:
-    os.system('cat md5sum.txt | grep ' + f + ' | md5sum -c --ignore-missing')
+if args.md5sum is not None:
+    for f in files_list:
+        os.system('cat ' + args.md5sum + ' | grep ' + f + ' | md5sum -c --ignore-missing')
 
 os.chdir(CURR_DIR)

@@ -94,7 +94,7 @@ for m in range(N_row):
         ax[m][n].axes.yaxis.set_ticks([])
 
 ax[0][0].set_title('Self-Gated LLR', fontsize=fontsize, weight='bold')
-ax[0][1].set_title('Self-Gated ZSSSL', fontsize=fontsize, weight='bold')
+ax[0][1].set_title('Self-Gated ADMM Unrolling', fontsize=fontsize, weight='bold')
 
 ax[0][0].set_ylabel('Coronal', fontsize=fontsize, weight='bold')
 ax[1][0].set_ylabel('Sagittal', fontsize=fontsize, weight='bold')

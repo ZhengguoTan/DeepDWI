@@ -62,7 +62,7 @@ for d in diff_list:
         ax[0, cnt].text(0.03*N_x, 0.08*N_x, 'LLR', bbox=props,
                         color='y', fontsize=fontsize, weight='bold')
 
-        ax[1, cnt].text(0.03*N_x, 0.08*N_x, 'ZSSSL', bbox=props,
+        ax[1, cnt].text(0.03*N_x, 0.08*N_x, 'ADMM Unrolling', bbox=props,
                         color='y', fontsize=fontsize, weight='bold')
 
     cnt += 1

@@ -123,7 +123,7 @@ for m in range(N_row):
         ax[m][n].axes.yaxis.set_ticks([])
 
 ax[0][0].set_ylabel('LLR', fontsize=fontsize, weight='bold')
-ax[1][0].set_ylabel('ZSSSL', fontsize=fontsize, weight='bold')
+ax[1][0].set_ylabel('ADMM Unrolling', fontsize=fontsize, weight='bold')
 
 plt.subplots_adjust(wspace=0, hspace=0.01)
 plt.savefig(DIR + '/0.7mm_dwi_tra_4.png',

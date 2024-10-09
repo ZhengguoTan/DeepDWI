@@ -143,7 +143,7 @@ for met in ['muse', 'jets', 'zsssl']:
         elif met == 'jets':
             met_str = 'Self-Gated LLR'
         elif met == 'zsssl':
-            met_str = 'Self-Gated ZSSSL'
+            met_str = 'Self-Gated ADMM Unrolling'
 
         ax[0].text(0.03*N_x, 0.08*N_x, met_str, bbox=props,
                    color='y', fontsize=fontsize, weight='bold')

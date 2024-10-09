@@ -2,12 +2,12 @@
 
 declare -a SVG_MAIN_FILE=(
     models/models                    # 1
-	motion/motion                    # 2
-	motion/motion2                   # 3
-	motion_self/motion_self_2        # 4
-	convergence/convergence          # 5
-	motion_self/motion_self_3        # 6
-	generalization/generalization    # 7
+	generalization/generalization    # 2
+	motion/motion                    # 3
+	motion/motion2                   # 4
+	motion_self/motion_self_2        # 5
+	convergence/convergence          # 6
+	motion_self/motion_self_3        # 7
 )
 
 ARR_LEN=${#SVG_MAIN_FILE[@]}

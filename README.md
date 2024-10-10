@@ -16,7 +16,7 @@ DeepDWI implements self-supervised learning image reconstruction techniques for 
 1. create a new conda environment named ('deepdwi', you can use other names as you like):
 
     ```bash
-    conda create -n deepdwi python==3.10
+    conda create -n deepdwi python=3.10
     ```
 
 2. activate the environment:
@@ -25,8 +25,12 @@ DeepDWI implements self-supervised learning image reconstruction techniques for 
     conda activate deepdwi
     ```
 
-3. install `deepdwi`:
+3. download and install `deepdwi`:
 
+    ```bash
+    git clone https://github.com/ZhengguoTan/DeepDWI.git
+    ```
+    and then ```cd``` to the DeepDWI directory,
     ```bash
     python -m pip install -e .
     ```

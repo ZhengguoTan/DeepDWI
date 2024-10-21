@@ -175,7 +175,7 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
             dwi_shot_phase = np.conj(dwi_shot_phase)
 
     else:
-        dwi_shot_phase = None
+        dwi_shot_phase = np.ones([N_diff, N_shot, 1, MB, N_y, N_x])
 
     # %% sampling mask
     mask = app._estimate_weights(kdat_prep, None, None, coil_dim=-4)

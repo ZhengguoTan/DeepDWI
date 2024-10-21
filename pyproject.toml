@@ -23,9 +23,9 @@ dependencies = [
     "PyYaml",
     "scipy==1.11.4",
     "tqdm",
-    "torch==2.1.2",
-    "torchaudio==2.1.2",
-    "torchvision==0.16.2"
+    "torch==2.4.0",
+    "torchaudio==2.4.0",
+    "torchvision==0.19.0"
 ]
 dynamic = [
     "version"

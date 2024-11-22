@@ -110,7 +110,7 @@ If you find the open-source codes/data useful, please cite:
 
 ```bibtex
 @Article{tan_2024_sg_zsl,
-    Title     = {{High-Resolution Motion-Robust Diffusion-Weighted Imaging with Self-Gated Zero-Shot Self-Supervised Reconstruction}},
+    Title     = {{High-Resolution Motion-Robust Diffusion-Weighted Imaging with Self-Gated Self-Supervised ADMM Unrolling}},
     Author    = {Tan, Zhengguo and Liebig, Patrick A and Hofmann, Annika and Laun, Frederik B and Knoll, Florian},
     Journal   = {},
     Year      = {},

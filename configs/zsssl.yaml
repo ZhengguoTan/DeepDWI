@@ -1,10 +1,10 @@
 method: zsssl
 
 data:
-  kdat: /data/0.7mm_21-dir_R2x2_vol3_scan1_kdat_slice_020.h5
+  kdat: /data/0.7mm_21-dir_R2x2_kdat_slice_000.h5
   navi: null
-  slice_idx: 20
-  coil: /data/0.7mm_21-dir_R2x2_vol3_scan1_coils.h5
+  slice_idx: 0
+  coil: /data/0.7mm_21-dir_R2x2_coils.h5
   normalize_kdat: 1.0  # important
   valid_rho: 0.2
   train_rho: 0.4

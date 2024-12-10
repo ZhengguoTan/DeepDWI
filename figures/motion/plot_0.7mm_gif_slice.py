@@ -90,12 +90,14 @@ for z in range(N_z):
     ax[0].text(0.03*N_x, 0.08*N_y, 'Navigated LLR', bbox=props,
                 color='w', fontsize=fontsize)
 
-    ax[3].text(0.03*N_x, 0.08*N_y, 'Self-Gated ZSSSL', bbox=props,
+    ax[3].text(0.03*N_x, 0.08*N_y, 'Self-Gated ADMM Unroll', bbox=props,
                color='w', fontsize=fontsize)
 
     for m in range(6):
         ax[m].axes.xaxis.set_ticks([])
         ax[m].axes.yaxis.set_ticks([])
+
+    fig.suptitle('0.7 mm ISO with 176 slices and 21 diffusion volumes at 10 minutes scan time', fontsize=fontsize*1.2, weight='bold')
 
 
     plt.subplots_adjust(wspace=0.0, hspace=0.0)

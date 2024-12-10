@@ -40,7 +40,8 @@ tra_slice_idx =  96
 cor_slice_idx = 124
 sag_slice_idx = 150
 
-props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+props = dict(boxstyle='round', facecolor='black',
+             edgecolor='wheat', linewidth=1, alpha=1.0)
 
 for d in range(1, N_diff, 1):
 
@@ -91,10 +92,10 @@ for d in range(1, N_diff, 1):
 
 
     ax[0].text(0.03*N_x, 0.08*N_y, 'Navigated LLR', bbox=props,
-                color='w', fontsize=fontsize)
+                color='y', fontsize=fontsize)
 
     ax[3].text(0.03*N_x, 0.08*N_y, 'Self-Gated ADMM Unroll', bbox=props,
-               color='w', fontsize=fontsize)
+               color='y', fontsize=fontsize)
 
     ax[0].text(0.03*N_x, 0.96*N_y, 'diff #' + str(d).zfill(2),
                color='w', fontsize=fontsize)

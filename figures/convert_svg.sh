@@ -1,13 +1,14 @@
 #!/bin/bash
 
 declare -a SVG_MAIN_FILE=(
-    models/models                    # 1
-	generalization/generalization    # 2
-	motion/motion                    # 3
-	motion/motion2                   # 4
-	motion_self/motion_self_2        # 5
-	convergence/convergence          # 6
-	motion_self/motion_self_3        # 7
+    models/sample                    # 1
+    models/models                    # 2
+	generalization/generalization    # 3
+	motion/motion                    # 4
+	motion/motion2                   # 5
+	motion_self/motion_self_2        # 6
+	convergence/convergence          # 7
+	motion_self/motion_self_3        # 8
 )
 
 ARR_LEN=${#SVG_MAIN_FILE[@]}

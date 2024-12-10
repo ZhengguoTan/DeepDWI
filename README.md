@@ -5,8 +5,8 @@
 DeepDWI implements self-supervised learning image reconstruction techniques for DWI.
 
 <p align="center">
-  <img alt="Light" src="figures/motion_self/0.7mm_dwi_vol3.png" width="100%">
-  <em>Prospectively self-gated diffusion-weighted image reconstruction on a iEPI data acquired with 0.7 mm isotropic resolution. Displayed images are one axial slice at four different diffusion-encoding directions. Self-gated zero-shot self-supervised learning (ZSSSL) enables much cleaner delineations of diffusion contrasts than locally-low rank (LLR) regularized reconstruction.</em>
+  <img alt="Light" src="figures/motion_self/gif_diff/motion_diff.gif" width="100%">
+  <em>Prospectively self-gated diffusion-weighted image reconstruction on a iEPI data acquired with 0.7 mm isotropic resolution. Self-gated zero-shot self-supervised learning (ZSSSL) enables much cleaner delineations of diffusion contrasts than locally-low rank (LLR) regularized reconstruction.</em>
 </p>
 
 ## Installation

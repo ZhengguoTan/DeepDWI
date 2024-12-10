@@ -67,7 +67,7 @@ img2 = np.flip(abs(DWI_ZS_SELF_One4All[diff_idx, 78, :, :]), axis=(-2))
 ax[1].imshow(img2, cmap='gray',
             interpolation=None, vmin=0, vmax=scale)
 
-ax[1].text(0.03*N_x, 0.06*N_x, "Single-Slice Traning", bbox=props,
+ax[1].text(0.03*N_x, 0.06*N_x, "Single-Slice Training", bbox=props,
            color='w', fontsize=fontsize, weight='bold')
 
 Rect = Rectangle((rect_x0, rect_y0), rect_w, rect_w, edgecolor='g',

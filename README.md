@@ -134,4 +134,4 @@ If you find the open-source codes/data useful, please cite:
 }
 ```
 
-<script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=JKMTJpkoAQQQ7tQV7oRSw11pp-vkUIht49jpdTugMyk&cl=ffffff&w=a"></script>
+<a href='https://clustrmaps.com/site/1c3b0'  title='Visit tracker'><img src='//clustrmaps.com/map_v2.png?cl=ffffff&w=a&t=n&d=JKMTJpkoAQQQ7tQV7oRSw11pp-vkUIht49jpdTugMyk'/></a>

@@ -187,6 +187,53 @@ class C2R(nn.Module):
         return input
 
 
+class C2MP(nn.Module):
+    """View as magnitude and phase
+
+    Args:
+
+    """
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, input: torch.Tensor):
+        mag = torch.abs(input)
+        phs = torch.angle(input)
+        return torch.stack([mag, phs], dim=-1)
+
+    def adjoint(self, input: torch.Tensor):
+        mag = input[..., 0]
+        phs = input[..., 1]
+        return mag * torch.exp(1j * phs)
+
+    def normal(self, input: torch.Tensor):
+        return input
+
+
+class PhaseCycle(nn.Module):
+    """Phase Cycling
+
+    Args:
+
+    """
+    def __init__(self, ishape: Tuple[int, ...]):
+        self.ishape = ishape
+        self.phs = torch.rand(ishape) * 2. * torch.pi
+
+        super().__init__()
+
+    def forward(self, input: torch.Tensor):
+        phs = torch.exp(1j * self.phs.to(input.device))
+        return input * phs
+
+    def adjoint(self, input: torch.Tensor):
+        phs = torch.exp(-1j * self.phs.to(input.device))
+        return input * phs
+
+    def normal(self, input: torch.Tensor):
+        return input
+
+
 def set_output_dir(base_dir, config_dict):
 
     method_conf = config_dict['method']

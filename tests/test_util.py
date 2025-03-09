@@ -46,3 +46,29 @@ class TestUtil(unittest.TestCase):
 
             ptt.assert_close(P.adjoint(output), input)
             ptt.assert_close(P.normal(input), input)
+
+    def test_C2MP(self):
+        ishape = [10, 4, 5, 1, 2, 16, 16]
+
+        for device in devices:
+            input = torch.randn(ishape, dtype=torch.cfloat, device=device)
+
+            C = util.C2MP()
+
+            output = C(input)
+
+            ptt.assert_close(C.adjoint(output), input)
+            ptt.assert_close(C.normal(input), input)
+
+    def test_PhaseCycle(self):
+        ishape = [10, 4, 5, 1, 2, 16, 16]
+
+        for device in devices:
+            input = torch.randn(ishape, dtype=torch.cfloat, device=device)
+
+            C = util.PhaseCycle(ishape)
+
+            output = C(input)
+
+            ptt.assert_close(C.adjoint(output), input)
+            ptt.assert_close(C.normal(input), input)

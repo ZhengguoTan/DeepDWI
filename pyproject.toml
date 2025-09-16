@@ -17,6 +17,7 @@ dependencies = [
     "cupy-cuda12x",
     "h5py==3.10.0",
     "matplotlib",
+    "nibabel",
     "numba==0.58.1",
     "numpy==1.26.3",
     "PyWavelets",

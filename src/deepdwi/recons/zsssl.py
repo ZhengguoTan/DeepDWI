@@ -68,6 +68,7 @@ class Dataset(torch.utils.data.Dataset):
 
         self._check_tensor_dim(phase_slice.dim(), 7)
         self._check_tensor_dim(phase_slice.dim(), 7)
+        # self._check_tensor_dim(basis.dim(), 3)
 
         self.sens = sens
         self.kspace = kspace
@@ -75,6 +76,7 @@ class Dataset(torch.utils.data.Dataset):
         self.lossf_mask = lossf_mask
         self.phase_echo = phase_echo
         self.phase_slice = phase_slice
+        # self.basis = basis
 
     def __len__(self):
         return len(self.train_mask)
@@ -88,6 +90,7 @@ class Dataset(torch.utils.data.Dataset):
 
         phase_echo_i = self.phase_echo[idx]
         phase_slice_i = self.phase_slice[idx]
+        # basis_i = self.basis[idx] if self.basis is not None else None
 
         return sens_i, kspace_i, train_mask_i, lossf_mask_i, phase_echo_i, phase_slice_i
 
@@ -268,7 +271,8 @@ class AlgUnroll(nn.Module):
                 train_mask: torch.Tensor,
                 lossf_mask: torch.Tensor,
                 phase_echo: torch.Tensor = None,
-                phase_slice: torch.Tensor = None):
+                phase_slice: torch.Tensor = None,
+                basis: torch.Tensor = None):
         """
         Args:
             * ikspace (torch.Tensor): input k-space
@@ -280,7 +284,8 @@ class AlgUnroll(nn.Module):
         train_kspace = train_mask * kspace
         SenseT = mri.Sense(sens, train_kspace,
                            phase_echo=phase_echo, combine_echo=True,
-                           phase_slice=phase_slice)
+                           phase_slice=phase_slice,
+                           basis=basis)
 
         x = SenseT.adjoint(SenseT.y)  # x0: AHy
         v = x.clone()
@@ -289,7 +294,8 @@ class AlgUnroll(nn.Module):
         refer_kspace = lossf_mask * kspace
         SenseL = mri.Sense(sens, refer_kspace,
                            phase_echo=phase_echo, combine_echo=True,
-                           phase_slice=phase_slice)
+                           phase_slice=phase_slice,
+                           basis=basis)
 
         if self.unrolled_algorithm == 'VarNet':
             self.max_eig = self.get_max_eig(SenseT)

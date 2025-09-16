@@ -259,9 +259,12 @@ class Sense(nn.Module):
         if jit.isinstance(self.basis, torch.Tensor):
             N_ful, N_sub = self.basis.shape
             basis_t = self.basis.conj().swapaxes(-1, -2)
+
+            output = torch.swapaxes(output, 0, -6)
             x1 = basis_t @ output.view(output.shape[0], -1)
 
             output = x1.view([N_sub] + list(output.shape[1:]))
+            output = torch.swapaxes(output, -6, 0)
 
         elif jit.isinstance(self.basis, nn.Module):
             raise RuntimeError('This model is nonlinear.')

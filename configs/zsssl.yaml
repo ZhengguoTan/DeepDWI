@@ -1,10 +1,11 @@
 method: zsssl
 
 data:
-  kdat: /data/0.7mm_21-dir_R2x2_kdat_slice_000.h5
+  kdat: /data/pelvis_dti_20250711_kdat_slice_021.h5
   navi: null
-  slice_idx: 0
-  coil: /data/0.7mm_21-dir_R2x2_coils.h5
+  slice_idx: 21
+  coil: /data/pelvis_dti_20250711_coils.h5
+  dvs: null # /data/pelvis_dti_20250711_dvs.h5
   normalize_kdat: 1.0  # important
   valid_rho: 0.2
   train_rho: 0.4
@@ -19,7 +20,7 @@ model:
   N_residual_block: 12
   unrolled_algorithm: ADMM  # ADMM, MoDL, VarNet
   ADMM_rho: 0.05
-  N_unroll: 8
+  N_unroll: 10
   kernel_size: 3
   features: 128
   contrasts_in_channels: True  #

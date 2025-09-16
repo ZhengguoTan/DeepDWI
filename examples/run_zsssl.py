@@ -64,6 +64,7 @@ def repeat_data(coil4: np.ndarray,
                 kdat6: np.ndarray,
                 phase_shot: np.ndarray,
                 phase_slice: np.ndarray,
+                # U: np.ndarray,
                 N_repeats: int = 12):
 
     coil7 = torch.from_numpy(coil4)
@@ -87,6 +88,13 @@ def repeat_data(coil4: np.ndarray,
         phase_slice7 = torch.tile(phase_slice7, tuple([N_repeats] + [1] * (phase_slice7.dim()-1)))
     else:
         phase_slice7 = None
+
+    # if U is not None:
+    #     U3 = torch.from_numpy(U)
+    #     U3 = U3[None, ...]
+    #     U3 = torch.tile(U3, tuple([N_repeats] + [1] * (U3.dim()-1)))
+    # else:
+    #     U3 = None
 
     return coil7, kdat7, phase_shot7, phase_slice7
 
@@ -130,6 +138,7 @@ if __name__ == "__main__":
     print('    navi: ', data_conf['navi'])
     print('    slice_idx: ', data_conf['slice_idx'])
     print('    coil: ', data_conf['coil'])
+    print('    dvs: ', data_conf['dvs'])
     print('    normalize_kdat: ', data_conf['normalize_kdat'])
     print('    valid_rho: ', data_conf['valid_rho'])
     print('    train_rho: ', data_conf['train_rho'])
@@ -203,15 +212,21 @@ if __name__ == "__main__":
 
 
     # %%
-    coil4, kdat6, kdat_scaling, phase_shot, phase_slice, mask = \
+    coil4, kdat6, kdat_scaling, phase_shot, phase_slice, mask, U = \
         prep.prep_dwi_data(data_file=data_conf['kdat'],
                            navi_file=data_conf['navi'],
                            coil_file=data_conf['coil'],
                            slice_idx=data_conf['slice_idx'],
+                           dvs=data_conf['dvs'],
                            norm_kdat=data_conf['normalize_kdat'],
                            N_shot_retro=args.N_shot_retro,
                            N_diff_split=data_conf['N_diff_split'],
                            N_diff_split_index=data_conf['N_diff_split_index'])
+
+    if U is not None:
+        U3 = torch.from_numpy(U).to(device)
+    else:
+        U3 = None
 
     mask, train_mask, lossf_mask, valid_mask = \
         prep_mask(mask, N_repeats=data_conf['repeats'],
@@ -234,6 +249,7 @@ if __name__ == "__main__":
     S = mri.Sense(coil7[0], kdat7[0],
                   phase_slice=phase_slice7[0] if phase_slice7 is not None else None,
                   phase_echo=phase_shot7[0] if phase_shot7 is not None else None,
+                  basis=U,
                   combine_echo=True)
     ishape = [data_conf['batch_size']] + list(S.ishape)
     print('>>> ishape to AlgUnroll: ', ishape)
@@ -314,7 +330,7 @@ if __name__ == "__main__":
 
                 # apply Model
                 batch_x, lamda, ynet, yref = model(sens, kspace, train_mask, lossf_mask,
-                                                phase_echo, phase_slice)
+                                                   phase_echo, phase_slice, U3)
 
                 epoch_x.append(batch_x)
 
@@ -348,7 +364,7 @@ if __name__ == "__main__":
 
                     # apply Model
                     _, lamda, ynet, yref = model(sens, kspace, train_mask, lossf_mask,
-                                                phase_echo, phase_slice)
+                                                 phase_echo, phase_slice, U3)
 
                     # loss
                     valid_loss = lossf(ynet, yref)
@@ -389,7 +405,8 @@ if __name__ == "__main__":
     if args.mode == 'train':
         best_checkpoint = torch.load(os.path.join(RECON_DIR, checkpoint_name))
     else:
-        best_checkpoint = torch.load(HOME_DIR + args.checkpoint)
+        best_checkpoint = torch.load(HOME_DIR + args.checkpoint,
+                                     weights_only=True)
 
     best_epoch = best_checkpoint['epoch']
     print('> loaded best checkpoint at the ' + str(best_epoch+1).zfill(3) + 'th epoch')
@@ -410,15 +427,23 @@ if __name__ == "__main__":
             phase_slice = phase_slice.to(device)
 
 
-            x, _, _, _  = model(sens, kspace, train_mask, lossf_mask, phase_echo, phase_slice)
+            x, _, _, _  = model(sens, kspace, train_mask, lossf_mask, phase_echo, phase_slice, U3)
             x_infer.append(x.detach().cpu().numpy())
 
     x_infer = np.array(x_infer) / kdat_scaling
+
+    if U is not None:
+        x_infer = np.swapaxes(x_infer, 0, -6)
+        x_whole = U @ x_infer.reshape(x_infer.shape[0], -1)
+        x_whole = np.reshape(x_whole, [x_whole.shape[0]] + list(x_infer.shape[1:]))
+        x_whole = np.swapaxes(x_whole, -6, 0)
+    else:
+        x_whole = x_infer
 
     recon_file = '/zsssl_slice_' + str(data_conf['slice_idx']).zfill(3)
     if args.mode == 'test':
         recon_file += '_test_shot-retro-' + str(args.N_shot_retro)
 
     f = h5py.File(RECON_DIR + recon_file + '.h5', 'w')
-    f.create_dataset('ZS', data=x_infer)
+    f.create_dataset('ZS', data=x_whole)
     f.close()

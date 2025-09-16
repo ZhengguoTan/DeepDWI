@@ -8,6 +8,9 @@ import torchvision.transforms as T
 
 from sigpy.mri import app, muse, retro, sms
 
+from deepdwi.models import bloch
+from deepdwi.recons import linsub
+
 from typing import Optional
 
 DIR = os.path.dirname(os.path.realpath(__file__))
@@ -43,16 +46,59 @@ def retro_usamp_shot(input, N_shot_retro: int = 1, shift: bool = True):
     return output
 
 
+def run_pi(kdat, coil, yshift):
+
+    R_PI = []
+
+    N_diff = kdat.shape[0]
+
+    for d in range(N_diff):
+        k = kdat[d]
+
+        A = muse.sms_sense_linop(k, coil, yshift)
+        R = muse.sms_sense_solve(A, k, lamda=0.01, max_iter=30)
+
+        R_PI.append(sp.to_device(R))
+
+    R_PI = np.array(R_PI)
+    R_PI = R_PI[..., None, :, :]  # 6 dim
+
+    return R_PI
+
 # %%
 def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
                   navi_file: Optional[str] = None,
                   coil_file: str = '/data/1.0mm_21-dir_R1x3_coils.h5',
                   slice_idx: int = 0,
+                  dvs: str = None,
                   norm_kdat: float = 1.0,
                   N_shot_retro: int = 0,
                   N_diff_split: int = 1,
                   N_diff_split_index: int = 0,
                   return_muse: bool = False):
+
+    # %%
+    if dvs is not None:
+
+        with h5py.File(HOME_DIR + dvs, 'r') as f:
+            bvals = f['bvals'][:]
+            bvecs = f['bvecs'][:]
+
+        y1, _ = bloch.model_DTI(bvals, bvecs,
+                                Dxx=(0, 3E-3, 50),
+                                Dyy=(0, 3E-3, 50),
+                                Dzz=(0, 3E-3, 50),
+                                Dxy=(0, 0, 1),
+                                Dxz=(0, 0, 1),
+                                Dyz=(0, 0, 1))
+
+        y1 = torch.tensor(y1)
+        Ut = linsub.learn_linear_subspace(y1, num_coeffs=10)
+        U = Ut.cpu().detach().numpy()
+        U = U + 1j * 0.
+
+    else:
+        U = None
 
     # %%
     f = h5py.File(HOME_DIR + data_file, 'r')
@@ -154,12 +200,13 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
                                 acs_shape)
 
 
+    coils_tensor = sp.to_pytorch(coil2)
+    TR = T.Resize(acs_shape, antialias=True)
+    mps_acs_r = TR(coils_tensor[..., 0]).cpu().detach().numpy()
+    mps_acs_i = TR(coils_tensor[..., 1]).cpu().detach().numpy()
+    mps_acs = mps_acs_r + 1j * mps_acs_i
+
     if N_shot > 1:
-        coils_tensor = sp.to_pytorch(coil2)
-        TR = T.Resize(acs_shape, antialias=True)
-        mps_acs_r = TR(coils_tensor[..., 0]).cpu().detach().numpy()
-        mps_acs_i = TR(coils_tensor[..., 1]).cpu().detach().numpy()
-        mps_acs = mps_acs_r + 1j * mps_acs_i
 
         _, dwi_shot = muse.MuseRecon(ksp_acs, mps_acs,
                                     MB=MB,
@@ -168,14 +215,19 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
                                     yshift=yshift,
                                     device=device_sp)
 
-
-        _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=5)
-
-        if navi_prep is not None:  # IMPORTANT
-            dwi_shot_phase = np.conj(dwi_shot_phase)
-
     else:
-        dwi_shot_phase = np.ones([N_diff, N_shot, 1, MB, N_y, N_x])
+
+        ksp_acs_dev = sp.to_device(ksp_acs, device=device_sp)
+        mps_acs_dev = sp.to_device(mps_acs, device=device_sp)
+
+        dwi_shot = run_pi(ksp_acs_dev, mps_acs_dev, yshift)
+
+    _, dwi_shot_phase = muse._denoising(dwi_shot, full_img_shape=[N_y, N_x], max_iter=3)
+
+    if navi_prep is not None:  # IMPORTANT
+        dwi_shot_phase = np.conj(dwi_shot_phase)
+
+        # dwi_shot_phase = np.ones([N_diff, N_shot, 1, MB, N_y, N_x])
 
     # %% sampling mask
     mask = app._estimate_weights(kdat_prep, None, None, coil_dim=-4)
@@ -199,20 +251,10 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
             kdat_prep_dev = sp.to_device(kdat_prep, device=device_sp)
             coil2_dev = sp.to_device(coil2, device=device_sp)
 
-            DWI_MUSE = []
+            DWI_MUSE = run_pi(kdat_prep_dev, coil2_dev, yshift)
 
-            for d in range(N_diff):
-                k = kdat_prep_dev[d]
-
-                A = muse.sms_sense_linop(k, coil2_dev, yshift)
-                R = muse.sms_sense_solve(A, k, lamda=0.01, max_iter=30)
-
-                DWI_MUSE.append(sp.to_device(R))
-
-            DWI_MUSE = np.array(DWI_MUSE)
-
-        return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask, DWI_MUSE
+        return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask, U, DWI_MUSE
 
     else:
 
-        return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask
+        return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask, U

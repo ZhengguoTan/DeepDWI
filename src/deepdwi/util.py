@@ -223,7 +223,9 @@ class PhaseCycle(nn.Module):
         super().__init__()
 
     def forward(self, input: torch.Tensor):
+        print('>>> input dtype: ', input.dtype)
         phs = torch.exp(1j * self.phs.to(input.device))
+        print('>>> phs: ', phs[0,0,0,0,0,0,0])
         return input * phs
 
     def adjoint(self, input: torch.Tensor):
@@ -252,20 +254,43 @@ def set_output_dir(base_dir, config_dict):
     dir_name += '_' + data_str
     if data_conf['N_shot_retro'] > 0:
         dir_name += '_shot-retro-' + "{:1d}".format(data_conf['N_shot_retro'])
-    dir_name += '_norm-kdat-' + "{:3.1f}".format(data_conf['normalize_kdat'])
+    # dir_name += '_norm-kdat-' + "{:3.1f}".format(data_conf['normalize_kdat'])
     if data_conf['navi'] is not None:
         dir_name += '_navi'
     else:
         dir_name += '_self'
 
     dir_name += '_' + model_conf['net']
-    dir_name += '_ResBlock-' + "{:2d}".format(model_conf['N_residual_block'])
+
+    if model_conf['phase_cycling'] is True:
+        dir_name += '_PC1'
+    else:
+        dir_name += '_PC0'
+
+    if model_conf['complex_conv'] is True:
+        dir_name += '_cplx-conv'
+    else:
+        dir_name += '_reim-conv'
+
+    if model_conf['activation']  == 'ReLU':
+        dir_name += '_ReLU'
+    elif model_conf['activation'] == 'Softshrink':
+        dir_name += '_soft'
+
+    if model_conf['magn_activation'] is True:
+        dir_name += '_magn-acti'
+    else:
+        dir_name += '_reim-acti'
+
+    dir_name += '_ResBlock-' + str(model_conf['N_residual_block']).zfill(2)
+    dir_name += '_features-' + str(model_conf['features']).zfill(3)
     if model_conf['batch_norm'] is True:
         dir_name += '_BatchNorm'
     dir_name += '_kernel-' + "{:1d}".format(model_conf['kernel_size'])
     dir_name += '_' + model_conf['unrolled_algorithm']
-    dir_name += '_' + str(model_conf['N_unroll']).zfill(2)
+    dir_name += '-' + str(model_conf['N_unroll']).zfill(2)
     dir_name += '_lamda-' + "{:5.3f}".format(model_conf['lamda'])
+    dir_name += '_rho-' + "{:5.3f}".format(model_conf['ADMM_rho'])
 
     dir_name += '_' + optim_conf['method']
     dir_name += '_lr-' + "{:.6f}".format(optim_conf['lr'])

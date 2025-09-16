@@ -54,13 +54,17 @@ ax[0].imshow(img1, cmap='gray',
 ax[0].text(0.03*N_x, 0.06*N_x, "Slice-by-Slice Training", bbox=props,
            color='w', fontsize=fontsize, weight='bold')
 
-rect_x0 = int(N_x//1.78)
-rect_y0 = int(N_y*0.62)
-rect_w = int(N_x*0.03)
+rect_x0 = [int(N_x*0.60), int(N_x*0.54)]
+rect_y0 = [int(N_y*0.46), int(N_y*0.21)]
+rect_w = [int(N_x*0.03), int(N_x*0.05)]
+ls = ['-', '--']
+One4One_color = ['y', 'b']
 
-Rect = Rectangle((rect_x0, rect_y0), rect_w, rect_w, edgecolor='y',
-                 facecolor='none', linewidth=2)
-ax[0].add_patch(Rect)
+for r in range(len(rect_x0)):
+    Rect = Rectangle((rect_x0[r], rect_y0[r]), rect_w[r], rect_w[r],
+                     edgecolor=One4One_color[r], facecolor='none',
+                     linewidth=2, linestyle=ls[r])
+    ax[0].add_patch(Rect)
 
 
 img2 = np.flip(abs(DWI_ZS_SELF_One4All[diff_idx, 78, :, :]), axis=(-2))
@@ -70,9 +74,13 @@ ax[1].imshow(img2, cmap='gray',
 ax[1].text(0.03*N_x, 0.06*N_x, "Single-Slice Training", bbox=props,
            color='w', fontsize=fontsize, weight='bold')
 
-Rect = Rectangle((rect_x0, rect_y0), rect_w, rect_w, edgecolor='g',
-                 facecolor='none', linewidth=2)
-ax[1].add_patch(Rect)
+One4All_color = ['g', 'c']
+
+for r in range(len(rect_x0)):
+    Rect = Rectangle((rect_x0[r], rect_y0[r]), rect_w[r], rect_w[r],
+                     edgecolor=One4All_color[r], facecolor='none',
+                     linewidth=2, linestyle=ls[r])
+    ax[1].add_patch(Rect)
 
 ax[2].imshow(abs(img1 - img2)*5, cmap='gray',
                 interpolation=None, vmin=0, vmax=scale)
@@ -94,27 +102,30 @@ plt.close()
 plt.style.use('dark_background')
 fig, ax = plt.subplots(1, 1, figsize=(N_col*4, N_row*4))
 
-roi_One4One = np.flip(abs(DWI_ZS_SELF_One4One[1:, 1, :, :]), axis=(-2))
-roi_One4One = roi_One4One[:, rect_y0 : rect_y0+rect_w, rect_x0 : rect_x0+rect_w]
-roi_One4One = roi_One4One.reshape((N_diff-1, -1)) * 1e5
+for r in range(len(rect_x0)):
 
-ave1 = np.squeeze(np.mean(roi_One4One, axis=1))
-std1 = np.squeeze(np.std(roi_One4One, axis=1))
+    roi_One4One = np.flip(abs(DWI_ZS_SELF_One4One[1:, 1, :, :]), axis=(-2))
+    roi_One4One = roi_One4One[:, rect_y0[r] : rect_y0[r]+rect_w[r], rect_x0[r] : rect_x0[r]+rect_w[r]]
+    roi_One4One = roi_One4One.reshape((N_diff-1, -1)) * 1e5
 
-print(roi_One4One.shape, ave1.shape, std1.shape)
+    ave1 = np.squeeze(np.mean(roi_One4One, axis=1))
+    std1 = np.squeeze(np.std(roi_One4One, axis=1))
 
-roi_One4All = np.flip(abs(DWI_ZS_SELF_One4All[1:, 78, :, :]), axis=(-2))
-roi_One4All = roi_One4All[:, rect_y0 : rect_y0+rect_w, rect_x0 : rect_x0+rect_w]
-roi_One4All = roi_One4All.reshape((N_diff-1, -1)) * 1e5
+    print(roi_One4One.shape, ave1.shape, std1.shape)
 
-ave2 = np.squeeze(np.mean(roi_One4All, axis=1))
-std2 = np.squeeze(np.std(roi_One4All, axis=1))
+    roi_One4All = np.flip(abs(DWI_ZS_SELF_One4All[1:, 78, :, :]), axis=(-2))
+    roi_One4All = roi_One4All[:, rect_y0[r] : rect_y0[r]+rect_w[r], rect_x0[r] : rect_x0[r]+rect_w[r]]
+    roi_One4All = roi_One4All.reshape((N_diff-1, -1)) * 1e5
 
-x = np.arange(1, N_diff, 1)
+    ave2 = np.squeeze(np.mean(roi_One4All, axis=1))
+    std2 = np.squeeze(np.std(roi_One4All, axis=1))
 
+    x = np.arange(1, N_diff, 1)
 
-plt.errorbar(x, ave1, yerr=std1, color='y', fmt='-o', capsize=6, linewidth=3)
-plt.errorbar(x, ave2, yerr=std2, color='g', fmt='-o', capsize=6, linewidth=3)
+    fmt = '-o' if r == 0 else '--o'
+
+    plt.errorbar(x, ave1, yerr=std1, color=One4One_color[r], fmt=fmt, capsize=6, linewidth=3)
+    plt.errorbar(x, ave2, yerr=std2, color=One4All_color[r], fmt=fmt, capsize=6, linewidth=3)
 
 plt.xlim([0, N_diff])
 plt.xticks(x)

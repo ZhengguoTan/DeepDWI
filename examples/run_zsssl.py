@@ -142,6 +142,9 @@ if __name__ == "__main__":
     model_conf = config_dict.get('model', {})
     print('> model_conf: ')
     print('    net: ', model_conf['net'])
+    print('    complex_conv: ', model_conf['complex_conv'])
+    print('    activation: ', model_conf['activation'])
+    print('    magn_activation: ', model_conf['magn_activation'])
     print('    N_residual_block: ', model_conf['N_residual_block'])
     print('    unrolled_algorithm: ', model_conf['unrolled_algorithm'])
     print('    ADMM_rho: ', model_conf['ADMM_rho'])
@@ -149,8 +152,12 @@ if __name__ == "__main__":
     print('    kernel_size: ', model_conf['kernel_size'])
     print('    features: ', model_conf['features'])
     print('    contrasts_in_channels: ', model_conf['contrasts_in_channels'])
+    print('    max_cg_iter: ', model_conf['max_cg_iter'])
+    print('    lamda: ', model_conf['lamda'])
     print('    requires_grad_lamda: ', model_conf['requires_grad_lamda'])
     print('    batch_norm: ', model_conf['batch_norm'])
+    print('    phase_cycling: ', model_conf['phase_cycling'])
+    print('    use_muse_phase: ', model_conf['use_muse_phase'])
 
     optim_conf = config_dict.get('optim', {})
     print('> optim_conf: ')
@@ -173,7 +180,7 @@ if __name__ == "__main__":
         print('    checkpoint: ', args.checkpoint)
 
 
-    if args.mode == 'test' and args.slice_idx != -1:
+    if args.slice_idx != -1:
         data_conf['slice_idx'] = args.slice_idx
         data_conf['kdat'] = data_conf['kdat'].split('.h5')[0][:-3] + str(args.slice_idx).zfill(3) + '.h5'
 
@@ -203,7 +210,7 @@ if __name__ == "__main__":
 
 
     # %%
-    coil4, kdat6, kdat_scaling, phase_shot, phase_slice, mask = \
+    coil4, kdat6, kdat_scaling, phase_shot, phase_slice, mask, DWI_MUSE = \
         prep.prep_dwi_data(data_file=data_conf['kdat'],
                            navi_file=data_conf['navi'],
                            coil_file=data_conf['coil'],
@@ -211,7 +218,8 @@ if __name__ == "__main__":
                            norm_kdat=data_conf['normalize_kdat'],
                            N_shot_retro=args.N_shot_retro,
                            N_diff_split=data_conf['N_diff_split'],
-                           N_diff_split_index=data_conf['N_diff_split_index'])
+                           N_diff_split_index=data_conf['N_diff_split_index'],
+                           return_muse=model_conf['use_muse_phase'])
 
     mask, train_mask, lossf_mask, valid_mask = \
         prep_mask(mask, N_repeats=data_conf['repeats'],
@@ -222,8 +230,13 @@ if __name__ == "__main__":
         repeat_data(coil4, kdat6, phase_shot, phase_slice,
                     N_repeats=data_conf['repeats'])
 
+    if DWI_MUSE is not None:
+        DWI_MUSE = np.exp(1j * np.angle(DWI_MUSE[:, None, ...]))
+        DWI_MUSE = torch.from_numpy(DWI_MUSE).to(device)  # 6dim
+
     print('>>> coil7 shape\t: ', coil7.shape, ' type: ', coil7.dtype)
     print('>>> kdat7 shape\t: ', kdat7.shape, ' type: ', kdat7.dtype)
+    print('>>> DWI_MUSE shape\t: ', DWI_MUSE.shape if DWI_MUSE is not None else "")
     # print('>>> phase_shot7 shape\t: ', phase_shot7.shape, ' type: ', phase_shot7.dtype)
     # print('>>> phase_slice7 shape\t: ', phase_slice7.shape, ' type: ', phase_slice7.dtype)
 
@@ -234,7 +247,7 @@ if __name__ == "__main__":
     S = mri.Sense(coil7[0], kdat7[0],
                   phase_slice=phase_slice7[0] if phase_slice7 is not None else None,
                   phase_echo=phase_shot7[0] if phase_shot7 is not None else None,
-                  combine_echo=True)
+                  combine_echo=True, image_phase=DWI_MUSE)
     ishape = [data_conf['batch_size']] + list(S.ishape)
     print('>>> ishape to AlgUnroll: ', ishape)
     del S
@@ -261,8 +274,12 @@ if __name__ == "__main__":
                             kernel_size=model_conf['kernel_size'],
                             features=model_conf['features'],
                             contrasts_in_channels=model_conf['contrasts_in_channels'],
+                            complex_conv=model_conf['complex_conv'],
+                            activation=model_conf['activation'],
+                            magn_activation=model_conf['magn_activation'],
                             max_cg_iter=model_conf['max_cg_iter'],
-                            use_batch_norm=model_conf['batch_norm']).to(device)
+                            use_batch_norm=model_conf['batch_norm'],
+                            phase_cycling=model_conf['phase_cycling']).to(device)
 
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
     params = sum([np.prod(p.size()) for p in model_parameters])
@@ -274,10 +291,12 @@ if __name__ == "__main__":
         lossf = nn.MSELoss()
     elif loss_conf == 'NRMSELoss':
         lossf = zsssl.NRMSELoss()
+    elif loss_conf == 'PerpendicularLoss':
+        lossf = zsssl.PerpendicularLoss()
 
     if optim_conf['method'] == 'Adam':
         optimizer = optim.Adam(model.parameters(), lr=optim_conf['lr'])
-    else:
+    elif optim_conf['method'] == 'SGD':
         optimizer = optim.SGD(model.parameters(), lr=optim_conf['lr'])
 
     scheduler = optim.lr_scheduler.StepLR(optimizer,
@@ -314,7 +333,7 @@ if __name__ == "__main__":
 
                 # apply Model
                 batch_x, lamda, ynet, yref = model(sens, kspace, train_mask, lossf_mask,
-                                                phase_echo, phase_slice)
+                                                   phase_echo, phase_slice, DWI_MUSE)
 
                 epoch_x.append(batch_x)
 
@@ -348,7 +367,7 @@ if __name__ == "__main__":
 
                     # apply Model
                     _, lamda, ynet, yref = model(sens, kspace, train_mask, lossf_mask,
-                                                phase_echo, phase_slice)
+                                                 phase_echo, phase_slice, DWI_MUSE)
 
                     # loss
                     valid_loss = lossf(ynet, yref)
@@ -410,7 +429,7 @@ if __name__ == "__main__":
             phase_slice = phase_slice.to(device)
 
 
-            x, _, _, _  = model(sens, kspace, train_mask, lossf_mask, phase_echo, phase_slice)
+            x, _, _, _  = model(sens, kspace, train_mask, lossf_mask, phase_echo, phase_slice, DWI_MUSE)
             x_infer.append(x.detach().cpu().numpy())
 
     x_infer = np.array(x_infer) / kdat_scaling

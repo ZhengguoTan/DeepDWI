@@ -211,8 +211,7 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
 
             DWI_MUSE = np.array(DWI_MUSE)
 
-        return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask, DWI_MUSE
-
     else:
+        DWI_MUSE = None
 
-        return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask
+    return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask, DWI_MUSE

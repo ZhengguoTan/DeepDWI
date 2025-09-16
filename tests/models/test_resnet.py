@@ -7,6 +7,7 @@ import torch.testing as ptt
 from deepdwi import fourier, util
 from deepdwi.dims import *
 from deepdwi.models import resnet
+from deepdwi.recons import zsssl
 
 
 if __name__ == "__main__":
@@ -35,6 +36,23 @@ class TestResnet(unittest.TestCase):
             RN2D = resnet.ResNet2D().to(device)
 
             y = RN2D(img4)
+            print('> y shape: ', y.shape)
+
+    def test_ResNet2D_complex(self):
+        for device in devices:
+            img_shape = [1, 21, 1, 1, 3, 16, 24]
+            img = torch.randn(img_shape, dtype=torch.cfloat, device=device)
+
+            T = zsssl.Trafos(img.shape, complex_conv=True)
+
+            in_channels = T.oshape[-3]
+            RN2D = resnet.ResNet2D(in_channels=in_channels,
+                                   complex_conv=True).to(device)
+
+            ref = T(img)
+            y = RN2D(ref)
+
+            print('> T shape: ', ref.shape)
             print('> y shape: ', y.shape)
 
     def test_ResNet3D(self):

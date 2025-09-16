@@ -51,7 +51,8 @@ class Sense(nn.Module):
                  combine_echo: bool = False,
                  phase_slice: torch.Tensor = None,
                  coord: torch.Tensor = None,
-                 weights: torch.Tensor = None):
+                 weights: torch.Tensor = None,
+                 image_phase: torch.Tensor = None):
         r"""
         Initialize Sense as a nn.Module.
         """
@@ -109,6 +110,8 @@ class Sense(nn.Module):
 
         self.baseline = baseline
 
+        self.image_phase = image_phase
+
         # echo or shot
         if phase_echo is not None:
             self.phase_echo = phase_echo.to(self.device)
@@ -143,6 +146,9 @@ class Sense(nn.Module):
 
         if self.baseline is not None:
             self.baseline = self.baseline.to(self.device)
+
+        if self.image_phase is not None:
+            self.image_phase = self.image_phase.to(self.device)
 
         if self.phase_echo is not None:
             self.phase_echo = self.phase_echo.to(self.device)
@@ -194,6 +200,9 @@ class Sense(nn.Module):
 
         else:
             x_proj = x
+
+        if self.image_phase is not None:
+            x_proj = self.image_phase * x_proj
 
         # phase modeling
         if self.phase_echo is not None:
@@ -254,6 +263,9 @@ class Sense(nn.Module):
         if self.phase_echo is not None:
             output = torch.sum(torch.conj(self.phase_echo) * output,
                                dim=DIM_ECHO, keepdim=True)
+
+        if self.image_phase is not None:
+            output = torch.conj(self.image_phase) * output
 
         # subspace modeling
         if jit.isinstance(self.basis, torch.Tensor):

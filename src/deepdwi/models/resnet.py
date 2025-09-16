@@ -12,34 +12,128 @@ import torch.nn as nn
 from typing import Tuple, Union
 
 # %%
-def activation_func(activation,is_inplace=False):
-    return nn.ModuleDict([['ReLU',  nn.ReLU(inplace=is_inplace)],
+class ComplexBatchNorm2d(nn.Module):
+    def __init__(self, num_features):
+        super().__init__()
+        self.real_bn = nn.BatchNorm2d(num_features)
+        self.imag_bn = nn.BatchNorm2d(num_features)
+
+    def forward(self, x):
+        real_part = self.real_bn(x.real)
+        imag_part = self.imag_bn(x.imag)
+        return torch.complex(real_part, imag_part)
+
+# %%
+class ComplexReLU(nn.Module):
+    def __init__(self, inplace: bool = False, magn_activation: bool = True):
+        super().__init__()
+        self.inplace = inplace
+        self.magn_activation = magn_activation
+
+    def forward(self, x):
+        if self.magn_activation is True:
+            phs = x / torch.abs(x)
+            output = phs * nn.functional.relu(torch.abs(x), inplace=self.inplace)
+        else:
+            real_part = nn.functional.relu(x.real, inplace=self.inplace)
+            imag_part = nn.functional.relu(x.imag, inplace=self.inplace)
+            output = torch.complex(real_part, imag_part)
+
+        return output
+
+# %%
+class ComplexSoftshrink(nn.Module):
+    def __init__(self, lambd = 0.5):
+        super().__init__()
+        self.lambd = lambd
+
+    def forward(self, x):
+        real_part = nn.functional.softshrink(x.real, lambd=self.lambd)
+        imag_part = nn.functional.softshrink(x.imag, lambd=self.lambd)
+        output = torch.complex(real_part, imag_part)
+
+        print('>>> Complex Softshrink')
+
+        return output
+
+# %%
+def activation_func(activation, is_inplace: bool = False,
+                    complex_conv: bool = False,
+                    magn_activation: bool = True):
+
+    if complex_conv is True:
+        RELU = ComplexReLU(inplace=is_inplace,
+                           magn_activation=magn_activation)
+
+        SOFTSHRINK = ComplexSoftshrink(lambd=0.01)
+
+    else:
+        RELU = nn.ReLU(inplace=is_inplace)
+
+        SOFTSHRINK = nn.Softshrink(lambd=0.01)
+
+    return nn.ModuleDict([['ReLU',  RELU],
+                          ['Softshrink', SOFTSHRINK],
                           ['None',  nn.Identity()]])[activation]
 
-def batch_norm(use_batch_norm, features):
+# %%
+def batch_norm(use_batch_norm, features, complex_conv: bool = False):
     if use_batch_norm:
-        return nn.BatchNorm2d(features)
+        if complex_conv is False:
+            return nn.BatchNorm2d(features)
+        else:
+            return ComplexBatchNorm2d(features)
     else:
         return nn.Identity()
 
-def conv_layer(filter_size, padding='same', use_batch_norm=False, activation_type='ReLU'):
+# %%
+def conv_layer(filter_size, padding='same',
+               use_batch_norm: bool = False,
+               activation_type: str = 'ReLU',
+               complex_conv: bool = False,
+               magn_activation: bool = True):
+
     kernel_size, in_c, out_c = filter_size
+
+    if complex_conv is False:
+        conv_type = torch.float
+
+    else:
+        conv_type = torch.cfloat
+
     return nn.Sequential(nn.Conv2d(in_channels=in_c,
                                    out_channels=out_c,
                                    kernel_size=kernel_size,
-                                   padding=padding, bias=True),
-                         batch_norm(use_batch_norm, out_c),
-                         activation_func(activation_type))
+                                   padding=padding, bias=True,
+                                   dtype=conv_type),
+                         batch_norm(use_batch_norm, out_c,
+                                    complex_conv=complex_conv),
+                         activation_func(activation_type,
+                                         complex_conv=complex_conv,
+                                         magn_activation=magn_activation))
 
-def residual_block(filter_size):
-    return nn.Sequential(conv_layer(filter_size, activation_type='ReLU'),
-                         conv_layer(filter_size, activation_type='None'))
-
+def residual_block(filter_size, complex_conv: bool = False,
+                   activation: str = 'ReLU',
+                   magn_activation: bool = True):
+    return nn.Sequential(conv_layer(filter_size, activation_type=activation,
+                                    complex_conv=complex_conv,
+                                    magn_activation=magn_activation),
+                         conv_layer(filter_size, activation_type='None',
+                                    complex_conv=complex_conv,
+                                    magn_activation=magn_activation))
 
 class ResidualBlockModule(nn.Module):
-    def __init__(self, filter_size, num_blocks):
+    def __init__(self, filter_size, num_blocks,
+                 complex_conv: bool = False,
+                 activation: str = 'ReLU',
+                 magn_activation: bool = True):
         super().__init__()
-        self.layers = nn.ModuleList([ residual_block(filter_size=filter_size) for _ in range(num_blocks)])
+        self.layers = nn.ModuleList(
+            [residual_block(filter_size=filter_size,
+                            complex_conv=complex_conv,
+                            activation=activation,
+                            magn_activation=magn_activation)
+             for _ in range(num_blocks)])
 
     def forward(self, x):
         scale_factor = torch.tensor([0.1], dtype=torch.float32).to(x.device)
@@ -55,7 +149,10 @@ class ResNet2D(nn.Module):
                  N_residual_block: int = 5,
                  kernel_size: int = 3,
                  features: int = 64,
-                 use_batch_norm: bool = False):
+                 use_batch_norm: bool = False,
+                 complex_conv: bool = False,
+                 activation: str = 'ReLU',
+                 magn_activation: bool = True):
 
         super().__init__()
         self.in_channels = in_channels
@@ -65,17 +162,27 @@ class ResNet2D(nn.Module):
         filter3 = [kernel_size, features, in_channels] #map output channels to input channels
         self.layer1 = conv_layer(filter_size=filter1,
                                  activation_type='None',
-                                 use_batch_norm=use_batch_norm)
+                                 use_batch_norm=use_batch_norm,
+                                 complex_conv=complex_conv,
+                                 magn_activation=magn_activation)
 
-        self.layer2 = ResidualBlockModule(filter_size=filter2, num_blocks=N_residual_block)
+        self.layer2 = ResidualBlockModule(filter_size=filter2,
+                                          num_blocks=N_residual_block,
+                                          complex_conv=complex_conv,
+                                          activation=activation,
+                                          magn_activation=magn_activation)
 
         self.layer3 =  conv_layer(filter_size=filter2,
                                   activation_type='None',
-                                  use_batch_norm=use_batch_norm)
+                                  use_batch_norm=use_batch_norm,
+                                  complex_conv=complex_conv,
+                                  magn_activation=magn_activation)
 
         self.layer4 = conv_layer(filter_size=filter3,
                                  activation_type='None',
-                                 use_batch_norm=use_batch_norm)
+                                 use_batch_norm=use_batch_norm,
+                                 complex_conv=complex_conv,
+                                 magn_activation=magn_activation)
 
     def forward(self,input_x):
         l1_out = self.layer1(input_x)

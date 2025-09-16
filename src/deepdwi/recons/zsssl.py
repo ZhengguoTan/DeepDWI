@@ -81,13 +81,13 @@ class Dataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
 
-        sens_i = self.sens[idx]
-        kspace_i = self.kspace[idx]
-        train_mask_i = self.train_mask[idx]
-        lossf_mask_i = self.lossf_mask[idx]
+        sens_i = self.sens[idx].to(torch.cfloat)
+        kspace_i = self.kspace[idx].to(torch.cfloat)
+        train_mask_i = self.train_mask[idx].to(torch.cfloat)
+        lossf_mask_i = self.lossf_mask[idx].to(torch.cfloat)
 
-        phase_echo_i = self.phase_echo[idx]
-        phase_slice_i = self.phase_slice[idx]
+        phase_echo_i = self.phase_echo[idx].to(torch.cfloat)
+        phase_slice_i = self.phase_slice[idx].to(torch.cfloat)
 
         return sens_i, kspace_i, train_mask_i, lossf_mask_i, phase_echo_i, phase_slice_i
 
@@ -104,7 +104,9 @@ class Dataset(torch.utils.data.Dataset):
 # %%
 class Trafos(nn.Module):
     def __init__(self, ishape: Tuple[int, ...],
-                 contrasts_in_channels: bool = False,
+                 contrasts_in_channels: bool = True,
+                 real_imag_in_channels: bool = True,
+                 complex_conv: bool = False,
                  verbose: bool = False):
         super(Trafos, self).__init__()
 
@@ -117,28 +119,48 @@ class Trafos(nn.Module):
         D, H, W = P1_oshape[-3], P1_oshape[-2], P1_oshape[-1]
 
         R2_oshape = [N_rep * N_z, D, H, W]
-        P2_oshape = [R2_oshape[0], 2, D, H, W]
 
         R1 = util.Reshape(tuple(R1_oshape), ishape)
         P1 = util.Permute(tuple(R1_oshape), (0, 2, 1, 4, 3))
 
         R2 = util.Reshape(tuple(R2_oshape), P1_oshape)
 
-        C2R = util.C2R()
-
-        P2 = util.Permute(tuple(R2_oshape + [2]), (0, 4, 1, 2, 3))
+        if complex_conv is False:
+            C2R = util.C2R()
+            P2 = util.Permute(tuple(R2_oshape + [2]), (0, 4, 1, 2, 3))
+        else:
+            C2R = util.Reshape(tuple(R2_oshape + [1]), R2_oshape)
+            P2 = util.Permute(tuple(R2_oshape + [1]), (0, 4, 1, 2, 3))
 
         self.fwd = nn.ModuleList([R1, P1, R2, C2R, P2])
 
-        if contrasts_in_channels is True:
-            P3 = util.Permute(tuple(P2_oshape), (0, 2, 1, 3, 4))
-            self.fwd.append(P3)
-            R3 = util.Reshape(tuple([P2_oshape[0], 2 * D, H, W]), P3.oshape)
-            self.fwd.append(R3)
+        if (contrasts_in_channels is True) and (real_imag_in_channels is True):
 
+            R3 = util.Reshape(tuple([P2.oshape[0], P2.oshape[1]*P2.oshape[2], P2.oshape[3], P2.oshape[4]]), P2.oshape)
+            self.fwd.append(R3)
             self.oshape = R3.oshape
-        else:
-            self.oshape = P2.oshape
+
+        elif (contrasts_in_channels is True) and (real_imag_in_channels is False):
+
+            R3 = util.Reshape(tuple([P2.oshape[0]*P2.oshape[1], P2.oshape[2], P2.oshape[3], P2.oshape[4]]), P2.oshape)
+            self.fwd.append(R3)
+            self.oshape = R3.oshape
+
+        elif (contrasts_in_channels is False) and (real_imag_in_channels is True):
+
+            P3 = util.Permute(P2.oshape, (0, 2, 1, 3, 4))
+            self.fwd.append(P3)
+            R3 = util.Reshape(tuple([P3.oshape[0]*P3.oshape[1], P3.oshape[2], P3.oshape[3], P3.oshape[4]]), P3.oshape)
+            self.fwd.append(R3)
+            self.oshape = R3.oshape
+
+        elif (contrasts_in_channels is False) and (real_imag_in_channels is False):
+
+            P3 = util.Permute(P2.oshape, (1, 2, 0, 3, 4))
+            self.fwd.append(P3)
+            R3 = util.Reshape(tuple([P3.oshape[0]*P3.oshape[1], P3.oshape[2], P3.oshape[3], P3.oshape[4]]), P3.oshape)
+            self.fwd.append(R3)
+            self.oshape = R3.oshape
 
         self.verbose = verbose
 
@@ -215,8 +237,13 @@ class AlgUnroll(nn.Module):
                  kernel_size: int = 3,
                  features: int = 64,
                  max_cg_iter: int = 10,
-                 contrasts_in_channels: bool = False,
-                 use_batch_norm: bool = False):
+                 contrasts_in_channels: bool = True,
+                 real_imag_in_channels: bool = True,
+                 complex_conv: bool = False,
+                 activation: str = 'ReLU',
+                 magn_activation: bool = True,
+                 use_batch_norm: bool = False,
+                 phase_cycling: bool = False):
         super(AlgUnroll, self).__init__()
 
         if NN == 'ResNet3D':
@@ -224,7 +251,9 @@ class AlgUnroll(nn.Module):
             print('> set contrasts_in_channels to False!')
 
         self.T = Trafos(ishape,
-                        contrasts_in_channels=contrasts_in_channels)
+                        contrasts_in_channels=contrasts_in_channels,
+                        real_imag_in_channels=real_imag_in_channels,
+                        complex_conv=complex_conv)
 
         print('> Trafos oshape: ', self.T.oshape)
 
@@ -234,22 +263,32 @@ class AlgUnroll(nn.Module):
         self.features = features
 
         if self.NN == 'ResNet3D':
-            self.NN_Module = resnet.ResNet3D(in_channels=self.T.oshape[1],
+            self.NN_Module = resnet.ResNet3D(in_channels=self.T.oshape[-3],
                                              N_residual_block=N_residual_block,
                                              features=self.features)
             print('> Use ResNet3D')
         elif self.NN == 'ResNet2D':
-            self.NN_Module = resnet.ResNet2D(in_channels=self.T.oshape[1],
+            self.NN_Module = resnet.ResNet2D(in_channels=self.T.oshape[-3],
                                              N_residual_block=N_residual_block,
                                              kernel_size=self.kernel_size,
                                              features=self.features,
-                                             use_batch_norm=use_batch_norm)
+                                             use_batch_norm=use_batch_norm,
+                                             complex_conv=complex_conv,
+                                             activation=activation,
+                                             magn_activation=magn_activation)
             print('> Use ResNet2D')
         elif self.NN == 'UNet':
-            self.NN_Module = unet.Unet(in_channels=self.T.oshape[1],
-                                       out_channels=self.T.oshape[1],
+            self.NN_Module = unet.Unet(in_channels=self.T.oshape[-3],
+                                       out_channels=self.T.oshape[-3],
                                        chans=self.features)
             print('> use UNet')
+        elif self.NN == 'AttenUnet':
+            self.NN_Module = unet.AttenUnet(in_channels=self.T.oshape[-3],
+                                        conv_channels=self.features)
+            print('> use AttenUnet')
+        elif self.NN == 'Identity':
+            self.NN_Module = nn.Identity()
+            print('> use Identity')
 
         # algorithm
         self.unrolled_algorithm = unrolled_algorithm
@@ -261,6 +300,8 @@ class AlgUnroll(nn.Module):
 
         self.max_cg_iter = max_cg_iter
         self.contrasts_in_channels = contrasts_in_channels
+        self.real_imag_in_channels = real_imag_in_channels
+        self.phase_cycling = phase_cycling
 
     def forward(self,
                 sens: torch.Tensor,
@@ -268,7 +309,8 @@ class AlgUnroll(nn.Module):
                 train_mask: torch.Tensor,
                 lossf_mask: torch.Tensor,
                 phase_echo: torch.Tensor = None,
-                phase_slice: torch.Tensor = None):
+                phase_slice: torch.Tensor = None,
+                image_phase: torch.Tensor = None):
         """
         Args:
             * ikspace (torch.Tensor): input k-space
@@ -280,7 +322,8 @@ class AlgUnroll(nn.Module):
         train_kspace = train_mask * kspace
         SenseT = mri.Sense(sens, train_kspace,
                            phase_echo=phase_echo, combine_echo=True,
-                           phase_slice=phase_slice)
+                           phase_slice=phase_slice,
+                           image_phase=image_phase)
 
         x = SenseT.adjoint(SenseT.y)  # x0: AHy
         v = x.clone()
@@ -289,30 +332,34 @@ class AlgUnroll(nn.Module):
         refer_kspace = lossf_mask * kspace
         SenseL = mri.Sense(sens, refer_kspace,
                            phase_echo=phase_echo, combine_echo=True,
-                           phase_slice=phase_slice)
+                           phase_slice=phase_slice,
+                           image_phase=image_phase)
 
         if self.unrolled_algorithm == 'VarNet':
             self.max_eig = self.get_max_eig(SenseT)
 
         for n in range(self.N_unroll):
 
+            if self.phase_cycling is True:
+                PC = util.PhaseCycle(x.shape)
+            else:
+                PC = util.Identity()
+
             if self.unrolled_algorithm == 'VarNet':
                 # gradient descent
                 u = u - (self.lamda / self.max_eig) * SenseT.adjoint(SenseT(u) - SenseT.y)
 
                 # NN
-                z = self.T(u)
-                z = z.float()
-                z = self.T.adjoint(self.NN_Module(z))
+                z = self.T(PC(u))
+                z = PC.adjoint(self.T.adjoint(self.NN_Module(z)))
                 u = u - z
 
                 x = u.clone()
 
             elif self.unrolled_algorithm == 'MoDL':
 
-                x = self.T(x)
-                x = x.float()
-                x = self.T.adjoint(self.NN_Module(x))
+                x = self.T(PC(x))
+                x = PC.adjoint(self.T.adjoint(self.NN_Module(x)))
 
                 AHA = lambda x: SenseT.adjoint(SenseT(x)) + self.lamda * x
                 AHy = SenseT.adjoint(SenseT.y) + self.lamda * x
@@ -328,9 +375,9 @@ class AlgUnroll(nn.Module):
                 x = conj_grad(AHA, AHy, max_iter=self.max_cg_iter)
                 # update v
                 v = x + u
-                v = self.T(v)
-                v = v.float()
-                v = self.T.adjoint((self.lamda/self.ADMM_rho) * self.NN_Module(v))
+                v = self.T(PC(v))
+
+                v = PC.adjoint(self.T.adjoint((self.lamda/self.ADMM_rho) * self.NN_Module(v)))
                 # update u
                 u = u + x - v
 
@@ -389,3 +436,35 @@ class NRMSELoss(nn.Module):
         loss = nn.functional.mse_loss(torch.view_as_real(y_est), torch.view_as_real(y_ref)) / mean
 
         return loss
+
+class PerpendicularLoss(nn.Module):
+    """
+    Reference:
+        * https://doi.org/10.1016/j.media.2022.102509
+    """
+    def __init__(self):
+
+        super().__init__()
+        self.other_loss = MixL1L2Loss()
+
+    def forward(self, pred: torch.Tensor, targ: torch.Tensor) -> torch.Tensor:
+
+        # equation 3
+        l_perp = torch.abs(pred.real * targ.imag - pred.imag * targ.real) / (torch.abs(pred) + 1e-8)
+
+        # equation 4 (ensure smoothness)
+        pred_phi = torch.angle(pred)
+        targ_phi = torch.angle(targ)
+        phi_diff = torch.min(
+            torch.abs(pred_phi - targ_phi),
+            torch.min(
+                torch.abs(pred_phi - (targ_phi - 2 * torch.pi)),
+                torch.abs(pred_phi - (targ_phi + 2 * torch.pi))
+            )
+        )
+        l_perp = torch.where(phi_diff < torch.pi / 2, l_perp, 2 * torch.abs(targ) - l_perp)
+
+        l_perp_range = 1.  # torch.max(l_perp) - torch.min(l_perp)
+
+        return l_perp.mean() / l_perp_range \
+            + self.other_loss(pred, targ)

@@ -30,7 +30,7 @@ parser.add_argument('--plot_kxky', action='store_true',
 args = parser.parse_args()
 
 
-fontsize = 11
+fontsize = 16
 
 # %%
 def plot_kxky(seg=2, pat=3, xmin=1, xmax=13, ymin=-10, ymax=8):

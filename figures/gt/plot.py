@@ -15,41 +15,42 @@ HOME_DIR = DIR.rsplit('/', 1)[0]
 HOME_DIR = HOME_DIR.rsplit('/', 1)[0]
 print('> HOME: ', HOME_DIR)
 
+DATA_DIR = HOME_DIR + '/data/'
+print('> DATA: ', DATA_DIR)
+
 props = dict(boxstyle='round', facecolor='black',
              edgecolor='black', linewidth=1, alpha=1.0)
 
 # %%
-with h5py.File(HOME_DIR + '/examples/2025-08-13_zsssl_1.0mm_21-dir_R1x3_kdat_slice_010_self_ResNet2D_PC0_reim-conv_ReLU_reim-acti_ResBlock-12_features-128_kernel-3_ADMM-12_lamda-0.050_rho-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_test_shot-retro-0.h5', 'r') as f:
+# HOME_DIR + '/examples/2025-08-13_zsssl_1.0mm_21-dir_R1x3_kdat_slice_010_self_ResNet2D_PC0_reim-conv_ReLU_reim-acti_ResBlock-12_features-128_kernel-3_ADMM-12_lamda-0.050_rho-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_test_shot-retro-0.h5'
+with h5py.File(DATA_DIR + '/gt_1.0mm_21-dir_R1x3_4shot_zsssl_test.h5', 'r') as f:
     DWI_ZS_4SHOT = f['DWI'][:]
+print('ZS 4shot: ', DWI_ZS_4SHOT.shape)
 
-print(DWI_ZS_4SHOT.shape)
-
-with h5py.File(HOME_DIR + '/examples/2025-08-17_zsssl_1.0mm_21-dir_R1x3_kdat_slice_010_shot-retro-2_self_ResNet2D_PC0_reim-conv_ReLU_reim-acti_ResBlock-12_features-128_kernel-3_ADMM-12_lamda-0.050_rho-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_test_shot-retro-2.h5', 'r') as f:
+# HOME_DIR + '/examples/2025-08-17_zsssl_1.0mm_21-dir_R1x3_kdat_slice_010_shot-retro-2_self_ResNet2D_PC0_reim-conv_ReLU_reim-acti_ResBlock-12_features-128_kernel-3_ADMM-12_lamda-0.050_rho-0.050_Adam_lr-0.000500_MixL1L2Loss/zsssl_test_shot-retro-2.h5'
+with h5py.File(DATA_DIR + '/gt_1.0mm_21-dir_R1x3_2shot_zsssl_test.h5', 'r') as f:
     DWI_ZS_2SHOT = f['DWI'][:]
+print('ZS 2shot: ', DWI_ZS_2SHOT.shape)
 
-print(DWI_ZS_2SHOT.shape)
-
-
-with h5py.File('/home/atuin/b143dc/b143dc15/Experiments/2023-09-26_Terra_Diffusion_iEPI/meas_MID00081_FID00082_Seg4_20_1p0iso/JETS.h5', 'r') as f:
+# '/home/atuin/b143dc/b143dc15/Experiments/2023-09-26_Terra_Diffusion_iEPI/meas_MID00081_FID00082_Seg4_20_1p0iso/JETS.h5'
+with h5py.File(DATA_DIR + '/gt_1.0mm_21-dir_R1x3_4shot_LLR.h5', 'r') as f:
     DWI_LR_4SHOT = f['DWI'][:]
+print('LLR 4shot: ', DWI_LR_4SHOT.shape)
 
-print(DWI_LR_4SHOT.shape)
-
-with h5py.File('/home/atuin/b143dc/b143dc15/Experiments/2023-09-26_Terra_Diffusion_iEPI/meas_MID00081_FID00082_Seg4_20_1p0iso/JETS_2shot.h5', 'r') as f:
+# '/home/atuin/b143dc/b143dc15/Experiments/2023-09-26_Terra_Diffusion_iEPI/meas_MID00081_FID00082_Seg4_20_1p0iso/JETS_2shot.h5'
+with h5py.File(DATA_DIR + '/gt_1.0mm_21-dir_R1x3_2shot_LLR.h5', 'r') as f:
     DWI_LR_2SHOT = f['DWI'][:]
+print('LLR 2shot: ', DWI_LR_2SHOT.shape)
 
-print(DWI_LR_2SHOT.shape)
-
-
-with h5py.File('/home/atuin/b143dc/b143dc15/Experiments/2023-09-26_Terra_Diffusion_iEPI/meas_MID00081_FID00082_Seg4_20_1p0iso/MUSE.h5', 'r') as f:
+# '/home/atuin/b143dc/b143dc15/Experiments/2023-09-26_Terra_Diffusion_iEPI/meas_MID00081_FID00082_Seg4_20_1p0iso/MUSE.h5'
+with h5py.File(DATA_DIR + '/gt_1.0mm_21-dir_R1x3_4shot_MUSE.h5', 'r') as f:
     DWI_PI_4SHOT = f['DWI'][:]
+print('MUSE 4shot: ', DWI_PI_4SHOT.shape)
 
-print(DWI_PI_4SHOT.shape)
-
-with h5py.File('/home/atuin/b143dc/b143dc15/Experiments/2023-09-26_Terra_Diffusion_iEPI/meas_MID00081_FID00082_Seg4_20_1p0iso/MUSE_2shot.h5', 'r') as f:
+# '/home/atuin/b143dc/b143dc15/Experiments/2023-09-26_Terra_Diffusion_iEPI/meas_MID00081_FID00082_Seg4_20_1p0iso/MUSE_2shot.h5'
+with h5py.File(DATA_DIR + '/gt_1.0mm_21-dir_R1x3_2shot_MUSE.h5', 'r') as f:
     DWI_PI_2SHOT = f['DWI'][:]
-
-print(DWI_PI_2SHOT.shape)
+print('MUSE 2shot: ', DWI_PI_2SHOT.shape)
 
 # %%
 DWI_ZS_4SHOT = np.flip(abs(DWI_ZS_4SHOT), axis=(-2))

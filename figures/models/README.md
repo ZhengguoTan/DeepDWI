@@ -3,7 +3,7 @@
 ## Multi-shot EPI with ky-shift encoding
 
 <p align="center">
-  <img alt="Light" src="sampling_pattern_ky_t_Seg3_Pat2.png" width="100%">
+  <img alt="Light" src="sampling_pattern_ky_t_Seg3_Pat2.png" width="50%">
 </p>
 
 ## Forward model (fwd)

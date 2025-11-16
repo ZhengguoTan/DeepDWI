@@ -290,7 +290,7 @@ for s in slice_loop:
             dwi_comb_llr_imag = sp.to_device(dwi_comb_llr_imag)
 
             # store output
-            f = h5py.File(instr + '_JETS_slice_' + slice_str + split_str + '.h5', 'w')
+            f = h5py.File(instr + '_JETS' + shot_str + '_slice_' + slice_str + split_str + '.h5', 'w')
             f.create_dataset('dwi_shot', data=dwi_shot_full)
             f.create_dataset('dwi_comb', data=dwi_comb_llr_imag)
             f.create_dataset('admm_lamda', data=args.admm_lamda)
@@ -314,7 +314,7 @@ for s in slice_loop:
         dwi_shot_llr = sp.to_device(dwi_shot_llr)
 
         # store output
-        f = h5py.File(instr + '_JETS_slice_' + slice_str + '.h5', 'w')
+        f = h5py.File(instr + '_JETS' + shot_str + '_slice_' + slice_str + '.h5', 'w')
         f.create_dataset('dwi_shot', data=dwi_shot_llr)
         f.close()
 
@@ -331,7 +331,7 @@ for s in slice_loop:
         dwi_muse = sp.to_device(dwi_muse)
 
         # store output
-        recon_file = '_MUSE_slice_' + slice_str + '.h5'
+        recon_file = '_MUSE' + shot_str + '_slice_' + slice_str + '.h5'
         f = h5py.File(instr + recon_file, 'w')
         f.create_dataset('DWI', data=dwi_muse)
         f.create_dataset('DWI_shot', data=dwi_shot)
@@ -349,7 +349,7 @@ for s in slice_loop:
         dwi_mussels = sp.to_device(dwi_mussels)
 
         # store output
-        recon_file = '_MUSSELS_slice_' + slice_str + '.h5'
+        recon_file = '_MUSSELS' + shot_str + '_slice_' + slice_str + '.h5'
         f = h5py.File(instr + recon_file, 'w')
         f.create_dataset('DWI', data=dwi_mussels)
         f.close()

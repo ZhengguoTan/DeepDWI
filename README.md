@@ -68,12 +68,13 @@ That's it! Enjoy `deepdwi`!
 
 Before running the scripts in `DeepDWI`, you need to download the following data to the [/data/](data/) folder:
 
-| Spatial Resolution (mm3) | Diffusion Mode | Acceleration (in-plane x slice) | Shots | Navigator | Link |
-|---|---|---|---|---|---|
-| 0.7 x 0.7 x 0.7 | MDDW 20 directions with b-value of 1000 s/mm2 | 2 x 2 | 3 | Yes | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10781347.svg)](https://doi.org/10.5281/zenodo.10781347) |
-| 0.7 x 0.7 x 0.7 | MDDW 20 directions with b-value of 1000 s/mm2 | 2 x 2 | 3 | No | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13864504.svg)](https://doi.org/10.5281/zenodo.13864504) |
-| 1.0 x 1.0 x 1.0 | MDDW 20 directions with b-value of 1000 s/mm2 | 1 x 3 | 4 | No  | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10668487.svg)](https://doi.org/10.5281/zenodo.10668487) |
-| 1.0 x 1.0 x 1.0 | 3-shell 126 directions with b-values up to 3000 s/mm2 | 3 x 3 | 2 | No  | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13171692.svg)](https://doi.org/10.5281/zenodo.13171692) |
+| Note | Spatial Resolution (mm3) | Diffusion Mode | Acceleration (in-plane x slice) | Shots | Navigator | Link |
+|---|---|---|---|---|---|---|
+| vol3 | 0.7 x 0.7 x 0.7 | MDDW 20 directions with b-value of 1000 s/mm2 | 2 x 2 | 3 | No | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13864504.svg)](https://doi.org/10.5281/zenodo.13864504) |
+| vol2 | 0.7 x 0.7 x 0.7 | MDDW 20 directions with b-value of 1000 s/mm2 | 2 x 2 | 3 | No | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17618073.svg)](https://doi.org/10.5281/zenodo.17618073) |
+| vol1 | 0.7 x 0.7 x 0.7 | MDDW 20 directions with b-value of 1000 s/mm2 | 2 x 2 | 3 | Yes | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10781347.svg)](https://doi.org/10.5281/zenodo.10781347) |
+| | 1.0 x 1.0 x 1.0 | MDDW 20 directions with b-value of 1000 s/mm2 | 1 x 3 | 4 | No  | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10668487.svg)](https://doi.org/10.5281/zenodo.10668487) |
+| | 1.0 x 1.0 x 1.0 | 3-shell 126 directions with b-values up to 3000 s/mm2 | 3 x 3 | 2 | No  | [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13171692.svg)](https://doi.org/10.5281/zenodo.13171692) |
 
 ## Examples
 
@@ -113,8 +114,8 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 If you find the open-source codes/data useful, please cite:
 
 ```bibtex
-@Article{tan_2024_sg_zsl,
-    Title     = {{High-Resolution Motion-Robust Diffusion-Weighted Imaging with Self-Gated Self-Supervised ADMM Unrolling}},
+@Article{tan_2025_sg_ssl,
+    Title     = {{High-Resolution Diffusion-Weighted Imaging with Self-Gated Self-Supervised ADMM Unrolling}},
     Author    = {Tan, Zhengguo and Liebig, Patrick A and Hofmann, Annika and Laun, Frederik B and Knoll, Florian},
     Journal   = {},
     Year      = {},

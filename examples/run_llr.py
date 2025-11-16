@@ -17,6 +17,29 @@ print('> HOME: ', HOME_DIR)
 DATA_DIR = HOME_DIR + '/data/'
 print('> DATA: ', DATA_DIR)
 
+# %%
+def retro_usamp_shot(input, N_shot_retro: int = 1, shift: bool = True):
+
+    N_diff, N_shot, N_coil, N_z, N_y, N_x = input.shape
+
+    assert N_shot_retro <= N_shot and N_shot % N_shot_retro == 0
+
+    R = N_shot // N_shot_retro
+
+    output = np.zeros_like(input, shape=[N_diff, N_shot_retro] + list(input.shape[2:]))
+
+    for d in range(N_diff):
+
+        offset = d % R
+
+        shot_ind = [offset + R * s for s in range(N_shot_retro)]
+
+        # print(str(d).zfill(3), shot_ind)
+
+        output[d, ...] = input[d, shot_ind, ...]
+
+    return output
+
 # %% options
 parser = argparse.ArgumentParser(description='run reconstruction.')
 
@@ -50,6 +73,9 @@ parser.add_argument('--admm_lamda', type=float, default=0.04,
 
 parser.add_argument('--split', type=int, default=1,
                     help='split diffusion encodings in recon [default: 1]')
+
+parser.add_argument('--shot', type=int, default=0,
+                    help='number of shots to use in recon')
 
 parser.add_argument('--device', type=int, default=0,
                     help='which device to run recon [default: 0]')
@@ -124,6 +150,16 @@ for s in slice_loop:
 
     print('>> kdat_prep shape: ', kdat_prep.shape)
     N_diff, N_shot, N_coil, N_z, N_y, N_x = kdat_prep.shape
+
+
+    shot_str = ''
+    if (args.shot > 0) and (args.shot < N_shot):
+        kdat_prep = retro_usamp_shot(kdat_prep, args.shot)
+
+        N_diff, N_shot, N_coil, N_z, N_y, N_x = kdat_prep.shape
+        print('>> kdat_prep shape: ', kdat_prep.shape)
+
+        shot_str = '_%1dshot'%(N_shot)
 
 
     slice_mb_idx = sms.map_acquire_to_ordered_slice_idx(s, N_slices, MB)

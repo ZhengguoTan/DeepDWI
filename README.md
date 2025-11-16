@@ -109,6 +109,8 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 
 * Please follow the sub-folders in [/figures/](figures/) for specific experiments and examples.
 
+* To plot [/figures/](figures/) without running all experiments, we provide saved results here: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17623589.svg)](https://doi.org/10.5281/zenodo.17623589). Please download them into the [/data/](data/) folder.
+
 ## References
 
 If you find the open-source codes/data useful, please cite:

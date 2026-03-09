@@ -116,14 +116,14 @@ Before running the scripts in `DeepDWI`, you need to download the following data
 If you find the open-source codes/data useful, please cite:
 
 ```bibtex
-@Article{tan_2025_sg_ssl,
+@Article{tan_2026_sg_ssl,
     Title     = {{High-Resolution Diffusion-Weighted Imaging with Self-Gated Self-Supervised ADMM Unrolling}},
     Author    = {Tan, Zhengguo and Liebig, Patrick A and Hofmann, Annika and Laun, Frederik B and Knoll, Florian},
-    Journal   = {},
-    Year      = {},
-    Volume    = {},
-    Pages     = {},
-    doi       = {}
+    Journal   = {Magnetic Resonance in Medicine},
+    Year      = {2026},
+    Volume    = {95},
+    Pages     = {2852-2862},
+    doi       = {10.1002/mrm.70250}
 }
 
 @Article{tan_2024_diff7t,

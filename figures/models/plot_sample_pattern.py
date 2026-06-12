@@ -33,9 +33,59 @@ args = parser.parse_args()
 fontsize = 16
 
 # %%
+def plot_kxky_segs(seg=2, pat=3, xmin=1, xmax=13, ymin=-10, ymax=8):
+    """
+    plot kx-ky sampling pattern of all segments
+
+    Arguments:
+
+    """
+    xvec = range(xmin, xmax)
+    yvec = range(ymin, ymax)
+
+    colors = plt.cm.rainbow(np.linspace(1, 0, 1))
+
+    f, ax = plt.subplots(figsize=(4,4))
+
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    # plot circles
+    X, Y = np.meshgrid(xvec, yvec)
+    ax.scatter(X, Y, color='none', edgecolor='gray')
+
+    colors = plt.cm.cool(np.linspace(1, 0, seg))
+
+    # plot y and x axes with arrows
+    ax.plot(1, ymin-1, ">k", transform=ax.get_yaxis_transform(), clip_on=False)
+    ax.plot(0, 1     , "^k", transform=ax.get_xaxis_transform(), clip_on=False)
+
+    for s in range(seg):
+
+        for t in range(0, len(yvec), pat * seg):  # line-by-line scan
+
+            xarr = xvec
+            yarr = np.ones_like(xarr) * (yvec[t] + s * pat)
+
+            ax.scatter(xarr, yarr, color=colors[s], edgecolor='none')
+
+    ax.set_xlim(0, xmax)
+    ax.set_xticks([])
+    ax.set_xlabel('$k_x$', fontsize=fontsize)
+    ax.set_ylim(int(ymin)-1, int(ymax))
+    ax.set_yticks([])
+    ax.set_ylabel('$k_y$', fontsize=fontsize)
+
+    ax.set_aspect('equal', adjustable='box')
+
+    plt.savefig('sampling_pattern_kxky_segs_' + 'Seg' + str(seg) + '_Pat' + str(pat) + '.png',
+                bbox_inches='tight', pad_inches=0, dpi=300)
+
+
+# %%
 def plot_kxky(seg=2, pat=3, xmin=1, xmax=13, ymin=-10, ymax=8):
     """
-    plot ky and t sampling pattern
+    plot kx-ky sampling pattern of one segment
 
     Arguments:
 
@@ -134,6 +184,9 @@ def plot_ky_t(seg=2, pat=3, xmin=1, xmax=13, ymin=-10, ymax=8):
 
 # %%
 if args.plot_kxky is True:
-    plot_kxky(seg=args.seg, pat=args.pat)
+    if args.seg_idx > 0:
+        plot_kxky(seg=args.seg, pat=args.pat)
+    elif args.seg_idx == -1:
+        plot_kxky_segs(seg=args.seg, pat=args.pat)
 else:
     plot_ky_t(seg=args.seg, pat=args.pat)

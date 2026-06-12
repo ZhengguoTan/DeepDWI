@@ -289,8 +289,8 @@ def set_output_dir(base_dir, config_dict):
     dir_name += '_kernel-' + "{:1d}".format(model_conf['kernel_size'])
     dir_name += '_' + model_conf['unrolled_algorithm']
     dir_name += '-' + str(model_conf['N_unroll']).zfill(2)
-    dir_name += '_lamda-' + "{:5.3f}".format(model_conf['lamda'])
-    dir_name += '_rho-' + "{:5.3f}".format(model_conf['ADMM_rho'])
+    dir_name += '_lamda-' + "{:5.4f}".format(model_conf['lamda'])
+    dir_name += '_rho-' + "{:5.4f}".format(model_conf['ADMM_rho'])
 
     dir_name += '_' + optim_conf['method']
     dir_name += '_lr-' + "{:.6f}".format(optim_conf['lr'])

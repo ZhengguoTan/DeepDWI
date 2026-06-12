@@ -110,7 +110,10 @@ class Sense(nn.Module):
 
         self.baseline = baseline
 
-        self.image_phase = image_phase
+        if image_phase is not None:
+            self.image_phase = image_phase.to(self.device)
+        else:
+            self.image_phase = None
 
         # echo or shot
         if phase_echo is not None:

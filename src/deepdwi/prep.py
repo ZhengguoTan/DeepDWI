@@ -12,10 +12,6 @@ from typing import Optional
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
-HOME_DIR = DIR.rsplit('/', 1)[0]
-HOME_DIR = HOME_DIR.rsplit('/', 1)[0]
-print('> HOME: ', HOME_DIR)
-
 device_sp = sp.Device(0 if torch.cuda.is_available() else -1)
 
 
@@ -44,17 +40,25 @@ def retro_usamp_shot(input, N_shot_retro: int = 1, shift: bool = True):
 
 
 # %%
-def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
-                  navi_file: Optional[str] = None,
-                  coil_file: str = '/data/1.0mm_21-dir_R1x3_coils.h5',
-                  slice_idx: int = 0,
-                  norm_kdat: float = 1.0,
-                  N_shot_retro: int = 0,
-                  N_diff_split: int = 1,
-                  N_diff_split_index: int = 0,
-                  return_muse: bool = False):
+def prep_dwi_data(
+    data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
+    navi_file: Optional[str] = None,
+    coil_file: str = '/data/1.0mm_21-dir_R1x3_coils.h5',
+    slice_idx: int = 0,
+    norm_kdat: float = 1.0,
+    N_shot_retro: int = 0,
+    N_diff_split: int = 1,
+    N_diff_split_index: int = 0,
+    return_muse_phase: bool = False,
+    HOME_DIR: str = None):
 
     # %%
+    if HOME_DIR is None:
+        HOME_DIR = DIR.rsplit('/', 1)[0]
+        HOME_DIR = HOME_DIR.rsplit('/', 1)[0]
+
+    print('> HOME: ', HOME_DIR)
+
     f = h5py.File(HOME_DIR + data_file, 'r')
     kdat = f['kdat'][:]
     MB = f['MB'][()]
@@ -139,7 +143,7 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
     # %% shot phase
     if navi_prep is None:
 
-        acs_shape = list([N_y // 4, N_x // 4])
+        acs_shape = list([N_y // 2, N_x // 2])
         ksp_acs = sp.resize(kdat_prep,
                             oshape=list(kdat_prep.shape[:-2]) +\
                                 acs_shape)
@@ -153,15 +157,15 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
                             oshape=list(navi_prep.shape[:-2]) +\
                                 acs_shape)
 
+    coils_tensor = sp.to_pytorch(coil2)
+    TR = T.Resize(acs_shape, antialias=True)
+    c_small_r = TR(coils_tensor[..., 0]).cpu().detach().numpy()
+    c_small_i = TR(coils_tensor[..., 1]).cpu().detach().numpy()
+    c_small = c_small_r + 1j * c_small_i
 
     if N_shot > 1:
-        coils_tensor = sp.to_pytorch(coil2)
-        TR = T.Resize(acs_shape, antialias=True)
-        mps_acs_r = TR(coils_tensor[..., 0]).cpu().detach().numpy()
-        mps_acs_i = TR(coils_tensor[..., 1]).cpu().detach().numpy()
-        mps_acs = mps_acs_r + 1j * mps_acs_i
 
-        _, dwi_shot = muse.MuseRecon(ksp_acs, mps_acs,
+        _, dwi_shot = muse.MuseRecon(ksp_acs, c_small,
                                     MB=MB,
                                     acs_shape=acs_shape,
                                     lamda=0.01, max_iter=30,
@@ -175,7 +179,27 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
             dwi_shot_phase = np.conj(dwi_shot_phase)
 
     else:
-        dwi_shot_phase = np.ones([N_diff, N_shot, 1, MB, N_y, N_x])
+
+        kdat_prep_dev = sp.to_device(kdat_prep, device=device_sp)
+        c_small_dev = sp.to_device(c_small, device=device_sp)
+
+        dwi_shot_phase = []
+        for d in range(N_diff):
+
+            k = kdat_prep_dev[d, ...]
+            k_small = sp.resize(k, oshape=list(k.shape[:-2]) +\
+                                acs_shape)
+
+            A = muse.sms_sense_linop(k_small, c_small_dev, yshift)
+            R = muse.sms_sense_solve(A, k_small, lamda=0.01, max_iter=30)
+            _, R_phase = muse._denoising(R, full_img_shape=[N_y, N_x], max_iter=7)
+
+            dwi_shot_phase.append(sp.to_device(R_phase))
+
+        dwi_shot_phase = np.array(dwi_shot_phase)
+        dwi_shot_phase = dwi_shot_phase[:, None, ...]  # 6 dim
+
+    print(' > dwi_shot_phase shape: ', dwi_shot_phase.shape)
 
     # %% sampling mask
     mask = app._estimate_weights(kdat_prep, None, None, coil_dim=-4)
@@ -183,7 +207,7 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
 
     print(' > mask shape: ', mask.shape)
 
-    if return_muse is True:
+    if return_muse_phase is True:
 
         if N_shot > 1:
 
@@ -211,7 +235,13 @@ def prep_dwi_data(data_file: str = '/data/1.0mm_21-dir_R1x3_kdat_slice_010.h5',
 
             DWI_MUSE = np.array(DWI_MUSE)
 
-    else:
-        DWI_MUSE = None
+        DWI_MUSE_PHASE = np.exp(1j * np.angle(DWI_MUSE[:, None, ...]))
 
-    return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask, DWI_MUSE
+        with h5py.File(HOME_DIR + '/muse.h5', 'w') as f:
+            f.create_dataset('muse', data=DWI_MUSE)
+            print('> saved muse')
+
+    else:
+        DWI_MUSE_PHASE = None
+
+    return coil2, kdat_prep, kdat_scaling, dwi_shot_phase, sms_phase, mask, DWI_MUSE_PHASE

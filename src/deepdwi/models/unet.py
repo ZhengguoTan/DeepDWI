@@ -168,10 +168,14 @@ class TransposeConvBlock(nn.Module):
         self.layers = nn.Sequential(
             # 1. upsampling nearest neighbor (nn.Module)
             # 2. conv
-            nn.Upsample(scale_factor=2),
-            nn.ConvTranspose2d(
-                in_channels, out_channels, kernel_size=2, stride=2, bias=False
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Conv2d(
+                in_channels, out_channels, kernel_size=3, stride=1, bias=False
             ),
+            # nn.Upsample(scale_factor=2),
+            # nn.ConvTranspose2d(
+            #     in_channels, out_channels, kernel_size=2, stride=2, bias=False
+            # ),
             nn.InstanceNorm2d(out_channels),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
         )

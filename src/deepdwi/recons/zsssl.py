@@ -115,13 +115,13 @@ class Trafos(nn.Module):
 
 
         R1_oshape = [N_rep] + [N_diff * N_shot * N_coil] + [N_z, N_y, N_x]
-        P1_oshape = [R1_oshape[0], R1_oshape[2], R1_oshape[1], R1_oshape[4], R1_oshape[3]]
+        P1_oshape = [R1_oshape[0], R1_oshape[2], R1_oshape[1], R1_oshape[3], R1_oshape[4]]
         D, H, W = P1_oshape[-3], P1_oshape[-2], P1_oshape[-1]
 
         R2_oshape = [N_rep * N_z, D, H, W]
 
         R1 = util.Reshape(tuple(R1_oshape), ishape)
-        P1 = util.Permute(tuple(R1_oshape), (0, 2, 1, 4, 3))
+        P1 = util.Permute(tuple(R1_oshape), (0, 2, 1, 3, 4))
 
         R2 = util.Reshape(tuple(R2_oshape), P1_oshape)
 

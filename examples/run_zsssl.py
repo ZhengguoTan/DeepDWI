@@ -210,7 +210,7 @@ if __name__ == "__main__":
 
 
     # %%
-    coil4, kdat6, kdat_scaling, phase_shot, phase_slice, mask, DWI_MUSE = \
+    coil4, kdat6, kdat_scaling, phase_shot, phase_slice, mask, DWI_MUSE_PHASE = \
         prep.prep_dwi_data(data_file=data_conf['kdat'],
                            navi_file=data_conf['navi'],
                            coil_file=data_conf['coil'],
@@ -219,7 +219,7 @@ if __name__ == "__main__":
                            N_shot_retro=args.N_shot_retro,
                            N_diff_split=data_conf['N_diff_split'],
                            N_diff_split_index=data_conf['N_diff_split_index'],
-                           return_muse=model_conf['use_muse_phase'])
+                           return_muse_phase=model_conf['use_muse_phase'])
 
     mask, train_mask, lossf_mask, valid_mask = \
         prep_mask(mask, N_repeats=data_conf['repeats'],
@@ -230,14 +230,13 @@ if __name__ == "__main__":
         repeat_data(coil4, kdat6, phase_shot, phase_slice,
                     N_repeats=data_conf['repeats'])
 
-    if DWI_MUSE is not None:
-        DWI_MUSE = np.exp(1j * np.angle(DWI_MUSE[:, None, ...]))
-        DWI_MUSE = torch.from_numpy(DWI_MUSE).to(device)  # 6dim
+    if DWI_MUSE_PHASE is not None:
+        DWI_MUSE_PHASE = torch.from_numpy(DWI_MUSE_PHASE)  # 6dim
 
     print('>>> coil7 shape\t: ', coil7.shape, ' type: ', coil7.dtype)
     print('>>> kdat7 shape\t: ', kdat7.shape, ' type: ', kdat7.dtype)
-    print('>>> DWI_MUSE shape\t: ', DWI_MUSE.shape if DWI_MUSE is not None else "")
-    # print('>>> phase_shot7 shape\t: ', phase_shot7.shape, ' type: ', phase_shot7.dtype)
+    print('>>> DWI_MUSE_PHASE shape\t: ', DWI_MUSE_PHASE.shape if DWI_MUSE_PHASE is not None else "")
+    print('>>> phase_shot7 shape\t: ', phase_shot7.shape, ' type: ', phase_shot7.dtype)
     # print('>>> phase_slice7 shape\t: ', phase_slice7.shape, ' type: ', phase_slice7.dtype)
 
     print('>>> train_mask shape\t: ', train_mask.shape, ' type: ', train_mask.dtype)
@@ -247,7 +246,25 @@ if __name__ == "__main__":
     S = mri.Sense(coil7[0], kdat7[0],
                   phase_slice=phase_slice7[0] if phase_slice7 is not None else None,
                   phase_echo=phase_shot7[0] if phase_shot7 is not None else None,
-                  combine_echo=True, image_phase=DWI_MUSE)
+                  combine_echo=True, image_phase=DWI_MUSE_PHASE)
+
+    if True:  # data_conf['normalize_kdat'] == 0:
+
+        x0 = S.adjoint(S.y)
+        x1 = torch.linalg.norm(x0, dim=0)
+        x2 = torch.linalg.norm(x1, dim=0)
+        x1, _ = torch.sort(x2.view(-1))
+        print('--- x1 shape: ', x1.shape)
+        x_med = abs(x1[len(x1)//2])
+        x_p90 = abs(x1[int(len(x1) * 0.9)])
+        x_max = abs(x1[-1])
+        if (x_max - x_p90) < 2 * (x_p90 - x_med):
+            scale = x_p90
+        else:
+            scale = x_max
+
+        print('--> k-space data scale: ', scale)
+
     ishape = [data_conf['batch_size']] + list(S.ishape)
     print('>>> ishape to AlgUnroll: ', ishape)
     del S
@@ -307,13 +324,18 @@ if __name__ == "__main__":
     # %% train and valid
     checkpoint_name = 'zsssl_best.pth'
     if args.mode == 'train':
+        train_loss_list = []
+        train_loss_flag = False
+        train_loss_min = np.inf
         valid_loss_min = np.inf
 
         epoch, valid_loss_tracker = 0, 0
 
         start_time = time.time()
 
-        while epoch < learn_conf['epochs'] and valid_loss_tracker < learn_conf['valid_loss_tracker']:
+        while epoch < learn_conf['epochs'] and \
+            train_loss_flag is False and \
+                valid_loss_tracker < learn_conf['valid_loss_tracker']:
 
             tic = time.time()
 
@@ -333,13 +355,14 @@ if __name__ == "__main__":
 
                 # apply Model
                 batch_x, lamda, ynet, yref = model(sens, kspace, train_mask, lossf_mask,
-                                                   phase_echo, phase_slice, DWI_MUSE)
+                                                   phase_echo, phase_slice, DWI_MUSE_PHASE)
 
                 epoch_x.append(batch_x)
 
                 # loss
                 train_loss = lossf(ynet, yref)
                 train_loss_sum += train_loss
+                train_loss_list.append(train_loss)
 
                 # back propagation
                 optimizer.zero_grad()
@@ -349,9 +372,9 @@ if __name__ == "__main__":
             scheduler.step()
 
             epoch_x = torch.stack(epoch_x)
-            # f = h5py.File(RECON_DIR + '/zsssl_epoch_' + str(epoch).zfill(3) + '.h5', 'w')
-            # f.create_dataset('DWI', data=epoch_x.detach().cpu().numpy())
-            # f.close()
+            f = h5py.File(RECON_DIR + '/zsssl_epoch_' + str(epoch).zfill(3) + '.h5', 'w')
+            f.create_dataset('DWI', data=epoch_x.detach().cpu().numpy())
+            f.close()
 
             # --- valid ---
             with torch.no_grad():
@@ -367,7 +390,7 @@ if __name__ == "__main__":
 
                     # apply Model
                     _, lamda, ynet, yref = model(sens, kspace, train_mask, lossf_mask,
-                                                 phase_echo, phase_slice, DWI_MUSE)
+                                                 phase_echo, phase_slice, DWI_MUSE_PHASE)
 
                     # loss
                     valid_loss = lossf(ynet, yref)
@@ -381,7 +404,13 @@ if __name__ == "__main__":
                 "optim_state": optimizer.state_dict()
             }
 
-            if valid_loss <= valid_loss_min:
+            if valid_loss <= valid_loss_min or train_loss <= train_loss_min:
+
+                if abs(train_loss_min - train_loss) < 1e-4:
+                    train_loss_flag = True
+                    print('--> set train_loss_flag to be True.')
+
+                train_loss_min = train_loss
                 valid_loss_min = valid_loss
                 torch.save(checkpoint, os.path.join(RECON_DIR, checkpoint_name))
                 # reset the val loss tracker each time a new lowest val error is achieved
@@ -406,9 +435,9 @@ if __name__ == "__main__":
     infer_load = DataLoader(infer_data, batch_size=1)
 
     if args.mode == 'train':
-        best_checkpoint = torch.load(os.path.join(RECON_DIR, checkpoint_name))
+        best_checkpoint = torch.load(os.path.join(RECON_DIR, checkpoint_name), weights_only=True)
     else:
-        best_checkpoint = torch.load(HOME_DIR + args.checkpoint)
+        best_checkpoint = torch.load(HOME_DIR + args.checkpoint, weights_only=True)
 
     best_epoch = best_checkpoint['epoch']
     print('> loaded best checkpoint at the ' + str(best_epoch+1).zfill(3) + 'th epoch')
@@ -429,7 +458,8 @@ if __name__ == "__main__":
             phase_slice = phase_slice.to(device)
 
 
-            x, _, _, _  = model(sens, kspace, train_mask, lossf_mask, phase_echo, phase_slice, DWI_MUSE)
+            x, _, _, _  = model(sens, kspace, train_mask, lossf_mask,
+                                phase_echo, phase_slice, DWI_MUSE_PHASE)
             x_infer.append(x.detach().cpu().numpy())
 
     x_infer = np.array(x_infer) / kdat_scaling
